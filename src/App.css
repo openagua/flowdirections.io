@@ -1,0 +1,14 @@
+.app {
+    position: fixed;
+    width: 100%;
+    top: 0;
+    bottom: 0;
+}
+
+.download button {
+    width: 100%;
+}
+
+.mapboxgl-ctrl-geocoder input[type='text'] {
+    font-size: 15px;
+}
