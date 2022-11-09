@@ -42,12 +42,14 @@ import Map, {
     Marker,
     useMap
 } from 'react-map-gl';
-import MapboxDraw from '@mapbox/mapbox-gl-draw';
-import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import {HotTable} from '@handsontable/react';
 import FileSaver from 'file-saver';
 
-import {simplifyPath, rdp} from "./utils";
+import DrawControl from "./controls/DrawControl";
+import SearchControl from "./controls/SearchControl";
+import FitAllControl from "./controls/FitAllControl";
+
+import {rdp} from "./utils";
 
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
@@ -55,6 +57,7 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import 'handsontable/dist/handsontable.full.min.css';
 
 import './App.css';
+import TilesControl from "./controls/TilesControl";
 
 const api = axios.create({
     baseURL: process.env.NODE_ENV === 'development' ? 'http://localhost:8000/' : process.env.REACT_APP_API_ENDPOINT
@@ -67,42 +70,8 @@ const mapboxAccessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 
 const round = (x, n) => Math.round(x * n) / n;
 
-const DrawControl = ({position, onUpdate, ...props}) => {
-    const points = useRef([]);
-    const handleCreate = ({features}) => {
-        points.current = [...points.current, ...features];
-        onUpdate(points.current);
-    }
-    useControl(({map}) => {
-        map.on('draw.create', handleCreate);
-        return new MapboxDraw(props)
-    }, {position});
-    return null;
-}
-
-const SearchControl = ({position}) => {
-    useControl(({map}) => {
-        return new MapboxGeocoder({
-            accessToken: mapboxAccessToken,
-        });
-    }, {position})
-}
-
-const TilesControl = ({position}) => {
-    // useControl(({map})) => {
-    //
-    // }
-}
-
 const CatchmentSource = ({data}) => {
-    const map = useMap();
     const sourceId = "catchments-geojson";
-
-    // useEffect(() => {
-    //     if (map && data) {
-    //         // const source = map.getSource(sourceId);
-    //     }
-    // }, [data, map])
 
     if (!data) {
         return null;
@@ -394,8 +363,9 @@ const App = () => {
                     mapboxAccessToken={mapboxAccessToken}
                     projection="globe"
                 >
-                    <SearchControl position="top-left"/>
-                    <NavigationControl/>
+                    <SearchControl accessToken={mapboxAccessToken} position="top-left"/>
+                    <NavigationControl position="top-right"/>
+                    {/*<FitAllControl position="top-right"/>*/}
                     <GeolocateControl/>
                     {manualMode && <DrawControl
                         position="top-left"
@@ -435,6 +405,7 @@ const App = () => {
                             <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
                                 <Tabs value={selectedTab} onChange={changeSelectedTab}>
                                     <Tab value="home" label={("Home")}/>
+                                    <Tab value="settings" label={"Settings"}/>
                                     <Tab value="about" label={("About")}/>
                                 </Tabs>
                             </Box>
@@ -443,34 +414,10 @@ const App = () => {
                                 <Button style={{width: "100%"}} variant="outlined" color="error"
                                         onClick={handleClearWorkspace}>Clear
                                     workspace</Button>
-                                <FormControl style={{width: "100%", marginTop: 15}}>
-                                    <FormLabel>Resolution</FormLabel>
-                                    <RadioGroup row value={resolution} onChange={handleChangeResolution}>
-                                        {resolutions.map(res => <FormControlLabel key={res} value={res}
-                                                                                  control={<Radio/>}
-                                                                                  label={res}/>)}
-                                    </RadioGroup>
-                                    <FormLabel>Streamlines</FormLabel>
-                                    <FormControlLabel
-                                        control={<Checkbox checked={showStreamlines} onChange={toggleStreamlines}/>}
-                                        label={("Show streamlines")}/>
-                                    {showStreamlines &&
-                                        <div>
-                                            <FormLabel>Streamline density</FormLabel>
-                                            <Slider value={tempStreamlinesThreshold || streamlinesThreshold} step={5}
-                                                    marks={thresholdMarks}
-                                                    min={0} max={100} style={{width: "100%"}}
-                                                    valueLabelDisplay="auto"
-                                                    onChange={(e, value) => setTempStreamlinesThreshold(value)}
-                                                    onChangeCommitted={handleChangeThreshold}/>
-                                            <FormLabel>Streamline opacity</FormLabel>
-                                            <Slider step={5} marks={opacityMarks} min={0} max={100}
-                                                    style={{width: "100%"}} value={streamlinesOpacity}
-                                                    valueLabelDisplay="auto" onChange={handleChangeOpacity}/>
-                                        </div>}
-                                </FormControl>
+
                                 <div>
                                     <FormGroup>
+                                        <br/>
                                         <FormLabel>Input mode</FormLabel>
                                         <FormHelperText>Manual mode allows you to create multiple
                                             catchments/subcatchments.</FormHelperText>
@@ -516,6 +463,36 @@ const App = () => {
                                                 GeoJSON</Button>
                                         </div>}
                                 </div>
+
+                            </Panel>
+
+                            <Panel value="settings">
+                                <FormControl style={{width: "100%", marginTop: 15}}>
+                                    <FormLabel>Resolution</FormLabel>
+                                    <RadioGroup row value={resolution} onChange={handleChangeResolution}>
+                                        {resolutions.map(res => <FormControlLabel key={res} value={res}
+                                                                                  control={<Radio/>}
+                                                                                  label={res}/>)}
+                                    </RadioGroup>
+                                    <FormLabel>Streamlines</FormLabel>
+                                    <FormControlLabel
+                                        control={<Checkbox checked={showStreamlines} onChange={toggleStreamlines}/>}
+                                        label={("Show streamlines")}/>
+                                    {showStreamlines &&
+                                        <div>
+                                            <FormLabel>Streamline density</FormLabel>
+                                            <Slider value={tempStreamlinesThreshold || streamlinesThreshold} step={5}
+                                                    marks={thresholdMarks}
+                                                    min={0} max={100} style={{width: "100%"}}
+                                                    valueLabelDisplay="auto"
+                                                    onChange={(e, value) => setTempStreamlinesThreshold(value)}
+                                                    onChangeCommitted={handleChangeThreshold}/>
+                                            <FormLabel>Streamline opacity</FormLabel>
+                                            <Slider step={5} marks={opacityMarks} min={0} max={100}
+                                                    style={{width: "100%"}} value={streamlinesOpacity}
+                                                    valueLabelDisplay="auto" onChange={handleChangeOpacity}/>
+                                        </div>}
+                                </FormControl>
                             </Panel>
 
                             <Panel value="about">
