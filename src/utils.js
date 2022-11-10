@@ -98,18 +98,6 @@ function getPerpDist(point, line) {
 }
 
 /**
- * Generate a random integer between 'min' and 'max' inclusively.
- *
- * @param {Number} min The floor for which generating random numbers will not go below.
- * @param {Number} max The ceiling for which generating random numbers will not go above.
- *
- * @return {Number}
- */
-function getRandInt(min, max) {
-    return Math.round(Math.random() * (max - min) + min);
-}
-
-/**
  * Decimate a curve of line segment connected points to a similarly shaped curve with fewer points.
  * Reference: https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
  *

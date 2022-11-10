@@ -12,3 +12,8 @@
 .mapboxgl-ctrl-geocoder input[type='text'] {
     font-size: 15px;
 }
+
+.mapbox-control-styles button {
+    width: 100%;
+    padding: 5px;
+}

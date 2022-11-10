@@ -47,7 +47,7 @@ import FileSaver from 'file-saver';
 
 import DrawControl from "./controls/DrawControl";
 import SearchControl from "./controls/SearchControl";
-import FitAllControl from "./controls/FitAllControl";
+import MapControl from "./controls/MapControl";
 
 import {rdp} from "./utils";
 
@@ -57,7 +57,7 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import 'handsontable/dist/handsontable.full.min.css';
 
 import './App.css';
-import TilesControl from "./controls/TilesControl";
+import StylesControl from "./controls/StylesControl";
 
 const api = axios.create({
     baseURL: process.env.NODE_ENV === 'development' ? 'http://localhost:8000/' : process.env.REACT_APP_API_ENDPOINT
@@ -65,6 +65,15 @@ const api = axios.create({
     // headers: {'X-Custom-Header': 'foobar'}
 });
 
+const styles = [{
+    id: 'streets',
+    label: 'Streets',
+    styleUrl: 'mapbox://styles/mapbox/streets-v11',
+}, {
+    id: 'satellite',
+    label: 'Satellite',
+    styleUrl: 'mapbox://styles/mapbox/satellite-v9'
+}]
 
 const mapboxAccessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 
@@ -128,7 +137,7 @@ const App = () => {
     const cursor = useRef();
     const originalCatchment = useRef();
 
-    const [mapStyle, setMapStyle] = useState("streets-v11");
+    const [mapStyle, setMapStyle] = useState(styles[0]);
     const [outlet, setOutlet] = useState(null);
     const [resolution, setResolution] = useState(30);
     const [outlets, setOutlets] = useState([]);
@@ -138,12 +147,14 @@ const App = () => {
     const [working, setWorking] = useState(false);
     const [success, setSuccess] = useState(false);
     const [selectedTab, setSelectedTab] = useState("home");
+    const [showTerrain, setShowTerrain] = useState(false);
+
     const [viewState, setViewState] = useState(() => {
         let initialViewState = {
             longitude: -116.1,
             latitude: 37.7,
             zoom: 5,
-            bearing: 0
+            bearing: 0,
         };
         const parts = document.location.hash.split('=');
         if (parts.length === 2) {
@@ -167,6 +178,7 @@ const App = () => {
     const [streamlinesOpacity, setStreamlinesOpacity] = useState(50);
     const [simplification, setSimplification] = useState(0);
     const [streamlinesTiles, setStreamlinesTiles] = useState();
+    const [autoZoom, setAutoZoom] = useState(true);
 
     useEffect(() => {
         setStreamlinesTiles(null);
@@ -221,7 +233,7 @@ const App = () => {
             setWorking(false);
             setSuccess(true);
 
-            flyTo(data);
+            autoZoom && flyTo(data);
         });
     }
 
@@ -260,6 +272,39 @@ const App = () => {
         window.history.replaceState({}, 'test', newLocation);
     }
 
+    const toggleShowTerrain = () => {
+        setShowTerrain(!showTerrain);
+    }
+
+    useEffect(() => {
+        if (!map.current) {
+            return;
+        }
+        const _map = map.current.getMap();
+        if (showTerrain) {
+            _map.addSource('mapbox-dem', {
+                'type': 'raster-dem',
+                'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
+                'tileSize': 512,
+                'maxzoom': 14
+            });
+
+            // add the DEM source as a terrain layer with exaggerated height
+            _map.setTerrain({'source': 'mapbox-dem', 'exaggeration': 1.5});
+
+            // add sky styling with `setFog` that will show when the map is highly pitched
+            _map.setFog({
+                'horizon-blend': 0.3,
+                'color': '#f8f0e3',
+                'high-color': '#add8e6',
+                'space-color': '#d8f2ff',
+                'star-intensity': 0.0
+            });
+        } else {
+            _map.removeSource('mapbox-dem')
+        }
+    }, [showTerrain]);
+
     const handleChangeThreshold = (e, value) => {
         setStreamlinesThreshold(value);
         setTempStreamlinesThreshold();
@@ -267,6 +312,10 @@ const App = () => {
 
     const handleChangeOpacity = (e, value) => {
         setStreamlinesOpacity(value);
+    }
+
+    const handleChangeAutoZoom = () => {
+        setAutoZoom(!autoZoom)
     }
 
     const handleChangeSimplification = (e, value) => {
@@ -291,6 +340,10 @@ const App = () => {
 
     const handleChangeResolution = (e, value) => {
         setResolution(value);
+    }
+
+    const handleChangeStyle = (styleId) => {
+        setMapStyle(styles.find(s => s.id === styleId));
     }
 
     const changeMode = () => {
@@ -348,6 +401,7 @@ const App = () => {
                 <Map
                     ref={map}
                     initialViewState={viewState}
+                    maxPitch={85}
                     onLoad={handleLoadMap}
                     onClick={manualMode ? null : handleQuickDelineate}
                     onMoveEnd={handleMoveEnd}
@@ -359,7 +413,7 @@ const App = () => {
                         width: null,
                         right: sidebarWidth,
                     }}
-                    mapStyle={`mapbox://styles/mapbox/${mapStyle}`}
+                    mapStyle={mapStyle.styleUrl}
                     mapboxAccessToken={mapboxAccessToken}
                     projection="globe"
                 >
@@ -373,7 +427,7 @@ const App = () => {
                         controls={{point: true, trash: true}}
                         onUpdate={setOutlets}
                     />}
-                    <TilesControl position="bottom-left"/>
+                    <StylesControl position="bottom-left" styles={styles} onChange={handleChangeStyle}/>
                     <ScaleControl position="bottom-right"/>
                     {streamlinesTiles &&
                         <Source key={streamlinesTiles} id="streamlines-raster" type="raster" tiles={[streamlinesTiles]}>
@@ -468,11 +522,11 @@ const App = () => {
 
                             <Panel value="settings">
                                 <FormControl style={{width: "100%", marginTop: 15}}>
-                                    <FormLabel>Resolution</FormLabel>
+                                    <FormLabel>Resolution (arc seconds)</FormLabel>
                                     <RadioGroup row value={resolution} onChange={handleChangeResolution}>
                                         {resolutions.map(res => <FormControlLabel key={res} value={res}
                                                                                   control={<Radio/>}
-                                                                                  label={res}/>)}
+                                                                                  label={`${res}"`}/>)}
                                     </RadioGroup>
                                     <FormLabel>Streamlines</FormLabel>
                                     <FormControlLabel
@@ -491,7 +545,15 @@ const App = () => {
                                             <Slider step={5} marks={opacityMarks} min={0} max={100}
                                                     style={{width: "100%"}} value={streamlinesOpacity}
                                                     valueLabelDisplay="auto" onChange={handleChangeOpacity}/>
+
+
                                         </div>}
+                                    <FormControlLabel
+                                        control={<Switch checked={showTerrain} onChange={toggleShowTerrain}/>}
+                                        label={("Show 3-D terrain")}/>
+                                    <FormControlLabel
+                                        control={<Switch checked={autoZoom} onChange={handleChangeAutoZoom}/>}
+                                        label={("Autozoom")}/>
                                 </FormControl>
                             </Panel>
 

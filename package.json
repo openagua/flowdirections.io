@@ -19,6 +19,7 @@
     "file-saver": "^2.0.5",
     "handsontable": "^12.2.0",
     "mapbox-gl": "^2.10.0",
+    "mapbox-gl-controls": "^2.3.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-map-gl": "^7.0.19",
