@@ -1,36 +1,24 @@
 import {useEffect, useRef, useState} from "react";
 import axios from "axios";
 import mapboxgl from "mapbox-gl";
+
 import {
     Button,
-    FormControlLabel,
     FormGroup,
-    Snackbar,
-    Alert,
-    Switch,
-    Slider,
-    Checkbox,
-    FormControl,
-    RadioGroup,
+    Menu,
+    Navbar,
+    NavbarGroup,
     Radio,
-    FormLabel,
-} from "@mui/material";
+    RadioGroup,
+    Slider,
+    Switch,
+    Tab,
+    Tabs,
+    Toaster,
+    Spinner
+} from "@blueprintjs/core";
 
-import AppBar from '@mui/material/AppBar';
-import Backdrop from '@mui/material/Backdrop';
-import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
-import FormHelperText from '@mui/material/FormHelperText';
-import Link from '@mui/material/Link';
-import Icon from '@mui/material/Icon';
-import Tab from '@mui/material/Tab';
-import Tabs from '@mui/material/Tabs';
-import TabPanel from '@mui/lab/TabPanel';
-import TabContext from '@mui/lab/TabContext';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
-
-import GitHubIcon from '@mui/icons-material/GitHub';
+import {MenuItem2, Popover2} from "@blueprintjs/popover2";
 
 import Map, {
     GeolocateControl,
@@ -38,18 +26,18 @@ import Map, {
     Layer,
     NavigationControl,
     ScaleControl,
-    useControl,
     Marker,
-    useMap
 } from 'react-map-gl';
 import {HotTable} from '@handsontable/react';
 import FileSaver from 'file-saver';
 
-import DrawControl from "./controls/DrawControl";
 import SearchControl from "./controls/SearchControl";
-import MapControl from "./controls/MapControl";
 
 import {rdp} from "./utils";
+
+import 'normalize.css/normalize.css';
+import '@blueprintjs/icons/lib/css/blueprint-icons.css';
+import '@blueprintjs/core/lib/css/blueprint.css';
 
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
@@ -57,12 +45,15 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import 'handsontable/dist/handsontable.full.min.css';
 
 import './App.css';
-import StylesControl from "./controls/StylesControl";
 
 const api = axios.create({
     baseURL: process.env.NODE_ENV === 'development' ? 'http://localhost:8000/' : process.env.REACT_APP_API_ENDPOINT
     // timeout: 1000,
     // headers: {'X-Custom-Header': 'foobar'}
+});
+
+const toast = Toaster.create({
+    position: "bottom-left"
 });
 
 const styles = [{
@@ -78,6 +69,48 @@ const styles = [{
 const mapboxAccessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 
 const round = (x, n) => Math.round(x * n) / n;
+
+const createOutlet = (lon, lat, id) => {
+    return (
+        {
+            "type": "Feature",
+            "properties": {
+                "id": id,
+                "marker-symbol": "monument"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [lon, lat]
+            }
+        }
+    )
+}
+
+const OutletMarker = ({outlet, draggable, onDragEnd}) => {
+    const handleMoveOutlet = ({lngLat}) => {
+        const {lng, lat} = lngLat;
+        const newOutlet = {
+            ...outlet,
+            geometry: {
+                ...outlet.geometry,
+                coordinates: [lng, lat]
+            }
+        }
+        onDragEnd(newOutlet);
+    }
+    const coords = outlet.geometry.coordinates;
+    return (
+        <Marker
+            longitude={coords[0]}
+            latitude={coords[1]}
+            draggable={draggable}
+            mapboxgl={mapboxgl}
+            onDragEnd={handleMoveOutlet}
+            offset={[0, 0]}
+            anchor="bottom"
+        />
+    )
+}
 
 const CatchmentSource = ({data}) => {
     const sourceId = "catchments-geojson";
@@ -108,40 +141,23 @@ const CatchmentSource = ({data}) => {
     )
 }
 
-const Panel = (props) => <TabPanel style={{padding: 15}} {...props}/>;
-
-const ExternalLink = (props) => <Link {...props} target="_blank"/>
+const ExternalLink = (props) => <a {...props} target="_blank" rel="noreferrer"/>
 
 const resolutions = [15, 30];
 
-const nThresholdMarks = 5;
-const thresholdMarks = [...new Array(nThresholdMarks)].map((v, i) => {
-    const value = i * 100 / (nThresholdMarks - 1);
-    return ({
-        value,
-        label: `${value}`
-    })
-});
-
-const nOpacityMarks = 5;
-const opacityMarks = [...new Array(nOpacityMarks)].map((v, i) => {
-    const value = i * 100 / (nOpacityMarks - 1);
-    return ({
-        value,
-        label: `${value}%`
-    })
-});
+const Panel = ({children}) => <div style={{padding: 0}}>{children}</div>;
 
 const App = () => {
     const map = useRef();
     const cursor = useRef();
     const originalCatchment = useRef();
 
+    const [menuOpen, setMenuOpen] = useState(false);
     const [mapStyle, setMapStyle] = useState(styles[0]);
     const [outlet, setOutlet] = useState(null);
     const [resolution, setResolution] = useState(30);
-    const [outlets, setOutlets] = useState([]);
-    const [manualMode, setManualMode] = useState(false);
+    const [outlets, setOutlets] = useState();
+    const [autoMode, setAutoMode] = useState(false);
     const [catchments, setCatchments] = useState(null);
     const [catchment, setCatchment] = useState(null);
     const [working, setWorking] = useState(false);
@@ -178,7 +194,8 @@ const App = () => {
     const [streamlinesOpacity, setStreamlinesOpacity] = useState(50);
     const [simplification, setSimplification] = useState(0);
     const [streamlinesTiles, setStreamlinesTiles] = useState();
-    const [autoZoom, setAutoZoom] = useState(true);
+    const [autoZoom, setAutoZoom] = useState(false);
+    const [locked, setLocked] = useState(false);
 
     useEffect(() => {
         setStreamlinesTiles(null);
@@ -213,25 +230,59 @@ const App = () => {
         });
     }
 
-    const handleQuickDelineate = ({lngLat}) => {
+    const handleChangeLocked = () => setLocked(!locked);
+
+    const handleAddOutlet = ({lngLat}) => {
         const {lng: lon, lat} = lngLat;
-        setOutlet({
-            "type": "Feature",
-            "properties": {
-                "marker-symbol": "monument"
-            },
-            "geometry": {
-                "coordinates": [lon, lat],
-                "type": "Point"
-            }
-        })
+        const id = outlets ? outlets.features.length + 1 : 1;
+        const newOutlet = createOutlet(lon, lat, id);
+        if (autoMode) {
+            setOutlet(newOutlet);
+            handleQuickDelineate(newOutlet);
+        } else {
+            const features = outlets ? [...outlets.features, newOutlet] : [newOutlet];
+            setOutlets({
+                type: 'FeatureCollection',
+                features
+            });
+        }
+    }
+
+    const handleMoveOutlet = (updated) => {
+        if (autoMode) {
+            setOutlet(updated);
+            handleQuickDelineate(updated)
+        } else {
+            setOutlets({
+                ...outlets,
+                features: outlets.features.map(f => f.properties.id === updated.properties.id ? updated : f)
+            });
+        }
+    }
+
+    const handleQuickDelineate = (newOutlet) => {
         setWorking(true);
         setCatchment(null);
-        api.get('delineate', {params: {lat, lon, res: resolution}}).then(({data}) => {
+        const coords = newOutlet.geometry.coordinates;
+        api.get('delineate', {params: {lat: coords[1], lon: coords[0], res: resolution}}).then(({data}) => {
             setCatchment(data);
             originalCatchment.current = data;
             setWorking(false);
             setSuccess(true);
+            toast.show({message: "Success!", intent: "success"});
+
+            autoZoom && flyTo(data);
+        });
+    }
+
+    const handleDelineateMany = () => {
+        setWorking(true);
+        setCatchments(null);
+        api.post('delineate', outlets, {params: {res: resolution}}).then(({data}) => {
+            setCatchments(data);
+            originalCatchment.current = data;
+            setWorking(false);
+            toast.show();
 
             autoZoom && flyTo(data);
         });
@@ -239,15 +290,15 @@ const App = () => {
 
     const outletCoords = outlet ? outlet.geometry.coordinates : null;
 
-    useEffect(() => {
-        if (map.current) {
-            if (manualMode) {
-                map.current.getCanvas().style.cursor = 'pointer';
-            } else {
-                map.current.getCanvas().style.cursor = 'crosshair';
-            }
-        }
-    }, [manualMode])
+    // useEffect(() => {
+    //     if (map.current) {
+    //         if (autoMode) {
+    //             map.current.getCanvas().style.cursor = 'pointer';
+    //         } else {
+    //             map.current.getCanvas().style.cursor = 'crosshair';
+    //         }
+    //     }
+    // }, [autoMode])
 
     const getCursor = () => map.current.getCanvas().style.cursor;
 
@@ -280,14 +331,17 @@ const App = () => {
         if (!map.current) {
             return;
         }
+        const terrainSourceID = 'mapbox-dem';
         const _map = map.current.getMap();
         if (showTerrain) {
-            _map.addSource('mapbox-dem', {
-                'type': 'raster-dem',
-                'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
-                'tileSize': 512,
-                'maxzoom': 14
-            });
+            if (!_map.getSource(terrainSourceID)) {
+                _map.addSource(terrainSourceID, {
+                    'type': 'raster-dem',
+                    'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
+                    'tileSize': 512,
+                    'maxzoom': 14
+                });
+            }
 
             // add the DEM source as a terrain layer with exaggerated height
             _map.setTerrain({'source': 'mapbox-dem', 'exaggeration': 1.5});
@@ -301,16 +355,21 @@ const App = () => {
                 'star-intensity': 0.0
             });
         } else {
-            _map.removeSource('mapbox-dem')
+            _map.setTerrain(null);
+            _map.setFog(null);
         }
     }, [showTerrain]);
 
-    const handleChangeThreshold = (e, value) => {
-        setStreamlinesThreshold(value);
+    const handleChangeThreshold = (value) => {
+        setStreamlinesThreshold(Number(value));
         setTempStreamlinesThreshold();
     }
 
-    const handleChangeOpacity = (e, value) => {
+    const handleChangeTempThreshold = (value) => {
+        setTempStreamlinesThreshold(Number(value));
+    }
+
+    const handleChangeOpacity = (value) => {
         setStreamlinesOpacity(value);
     }
 
@@ -338,8 +397,8 @@ const App = () => {
         });
     }
 
-    const handleChangeResolution = (e, value) => {
-        setResolution(value);
+    const handleChangeResolution = (e) => {
+        setResolution(Number(e.target.value));
     }
 
     const handleChangeStyle = (styleId) => {
@@ -347,12 +406,17 @@ const App = () => {
     }
 
     const changeMode = () => {
-        setManualMode(!manualMode);
+        setAutoMode(!autoMode);
     }
 
-    const handleDownloadGeoJSON = () => {
-        const blob = new Blob([JSON.stringify(manualMode ? catchments : catchment, null, 2)], {type: "text/plain;charset=utf-8"});
+    const handleDownloadCatchments = () => {
+        const blob = new Blob([JSON.stringify(autoMode ? catchment : catchments, null, 2)], {type: "text/plain;charset=utf-8"});
         FileSaver.saveAs(blob, "catchment.json");
+    }
+
+    const handleDownloadOutlets = () => {
+        const blob = new Blob([JSON.stringify(autoMode ? outlet : outlets, null, 2)], {type: "text/plain;charset=utf-8"});
+        FileSaver.saveAs(blob, `outlet${autoMode ? "" : "s"}.json`);
     }
 
     const handleClearWorkspace = () => {
@@ -368,29 +432,47 @@ const App = () => {
 
     const sidebarWidth = 350;
     const sidebarPadding = 0;
-    const navbarHeight = 42;
+    const navbarHeight = 50;
 
     // const simplifyMax = 0.01;
 
     return (
-        <div className="app">
-            <Backdrop
-                sx={{color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1}}
-                open={working}
-                // onClick={handleCloseBackgrop}
-            >
-                <CircularProgress color="inherit"/>
-            </Backdrop>
-            <AppBar position="static" style={{boxShadow: "none"}}>
-                <Toolbar style={{height: navbarHeight, minHeight: navbarHeight}}>
-                    <Typography variant="h6" component="div" sx={{flexGrow: 1}}>flowdirections.io</Typography>
-                    <Typography variant="h6" component="div" sx={{flexGrow: 1}}>NORTH AMERICA ONLY!</Typography>
-                    <Link color="inherit" href={process.env.REACT_APP_DONATE_LINK} target="_blank" variant="button"
-                          style={{marginRight: 20}}>Donate</Link>
-                    <Link href="https://www.github.com/openagua/flowdirections.io" variant="button" color="inherit"
-                          target="_blank" style={{display: "flex"}}><GitHubIcon/></Link>
-                </Toolbar>
-            </AppBar>
+        <div className="">
+            <div style={{
+                display: working ? "flex" : "none",
+                position: "fixed",
+                top: 0,
+                bottom: 0,
+                left: 0,
+                right: 0,
+                zIndex: 100,
+                background: "rgba(0,0,0,0.5)"
+            }}>
+                <Spinner size={150} intent="none" style={{margin: "auto"}}/>
+            </div>
+            <Navbar>
+                <NavbarGroup align="left">
+                    <Navbar.Heading>flowdirections.io</Navbar.Heading>
+                    <Popover2 position="bottom-left" minimal content={
+                        <Menu>
+                            <MenuItem2 text={("Download outlets")}>
+                                <MenuItem2 text={("GeoJSON")}/>
+                                <MenuItem2 text={("Shapefile")}/>
+                            </MenuItem2>
+                        </Menu>
+                    }>
+                        <Button intent="primary" minimal>{("File")}</Button>
+                    </Popover2>
+                    <Switch large label={"Lock editing"} style={{margin: 0, marginLeft: 10}} checked={locked}
+                            onChange={handleChangeLocked}/>
+                </NavbarGroup>
+                <NavbarGroup align="right">
+                    <a href={process.env.REACT_APP_DONATE_LINK} target="_blank" rel="noreferrer"
+                       style={{marginRight: 20}}>Donate</a>
+                    {/*<a href="https://www.github.com/openagua/flowdirections.io"*/}
+                    {/*   target="_blank" style={{display: "flex"}}><GitHubIcon/></a>*/}
+                </NavbarGroup>
+            </Navbar>
             <div style={{
                 position: "fixed",
                 top: navbarHeight,
@@ -403,7 +485,7 @@ const App = () => {
                     initialViewState={viewState}
                     maxPitch={85}
                     onLoad={handleLoadMap}
-                    onClick={manualMode ? null : handleQuickDelineate}
+                    onClick={locked ? null : handleAddOutlet}
                     onMoveEnd={handleMoveEnd}
                     onMoveStart={handleMoveStart}
                     style={{
@@ -421,13 +503,13 @@ const App = () => {
                     <NavigationControl position="top-right"/>
                     {/*<FitAllControl position="top-right"/>*/}
                     <GeolocateControl/>
-                    {manualMode && <DrawControl
-                        position="top-left"
-                        displayControlsDefault={false}
-                        controls={{point: true, trash: true}}
-                        onUpdate={setOutlets}
-                    />}
-                    <StylesControl position="bottom-left" styles={styles} onChange={handleChangeStyle}/>
+                    {/*{autoMode && <DrawControl*/}
+                    {/*    position="top-left"*/}
+                    {/*    displayControlsDefault={false}*/}
+                    {/*    controls={{point: true, trash: true}}*/}
+                    {/*    onUpdate={setOutlets}*/}
+                    {/*/>}*/}
+                    {/*<StylesControl position="bottom-left" styles={styles} onChange={handleChangeStyle}/>*/}
                     <ScaleControl position="bottom-right"/>
                     {streamlinesTiles &&
                         <Source key={streamlinesTiles} id="streamlines-raster" type="raster" tiles={[streamlinesTiles]}>
@@ -439,11 +521,12 @@ const App = () => {
                                 }}
                             />
                         </Source>}
-                    <CatchmentSource data={manualMode ? catchments : catchment}/>
-                    {!manualMode && outlet && <Marker longitude={outletCoords[0]} latitude={outletCoords[1]} draggable
-                                                      mapboxgl={mapboxgl}
-                                                      onDragEnd={handleQuickDelineate} offset={[0, 0]}
-                                                      anchor="bottom"/>}
+                    <CatchmentSource data={autoMode ? catchment : catchments}/>
+                    {autoMode && outlet &&
+                        <OutletMarker outlet={outlet} draggable={!locked} onDragEnd={handleMoveOutlet}/>}
+                    {!autoMode && outlets && outlets.features.map(o =>
+                        <OutletMarker key={o.properties.id} outlet={o} draggable={!locked}
+                                      onDragEnd={handleMoveOutlet}/>)}
                 </Map>
                 <div
                     style={{
@@ -454,148 +537,146 @@ const App = () => {
                         padding: sidebarPadding
                     }}
                 >
-                    <div>
-                        <TabContext value={selectedTab}>
-                            <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
-                                <Tabs value={selectedTab} onChange={changeSelectedTab}>
-                                    <Tab value="home" label={("Home")}/>
-                                    <Tab value="settings" label={"Settings"}/>
-                                    <Tab value="about" label={("About")}/>
-                                </Tabs>
-                            </Box>
-
-                            <Panel value="home">
-                                <Button style={{width: "100%"}} variant="outlined" color="error"
-                                        onClick={handleClearWorkspace}>Clear
-                                    workspace</Button>
-
-                                <div>
-                                    <FormGroup>
-                                        <br/>
-                                        <FormLabel>Input mode</FormLabel>
-                                        <FormHelperText>Manual mode allows you to create multiple
-                                            catchments/subcatchments.</FormHelperText>
-                                        <FormControlLabel control={<Switch checked={manualMode} onChange={changeMode}/>}
-                                                          label={("Manual mode")}/>
+                    <div style={{padding: 10}}>
+                        <Tabs id="sidebar-tabs" large>
+                            <Tab id="home" title="Home" panel={
+                                <Panel>
+                                    <Button fill large icon="eraser" onClick={handleClearWorkspace}>Clear
+                                        workspace</Button>
+                                    <br/>
+                                    <FormGroup
+                                        helperText={("Auto mode will delineate a catchment as soon as you left-click a map")}>
+                                        <Switch large checked={autoMode} onChange={changeMode} label={("Auto mode")}/>
                                     </FormGroup>
-                                </div>
-                                {manualMode && <div>
-                                    <div>
-                                        {outlets && outlets.length ?
-                                            <HotTable
-                                                data={outlets.map(o => {
-                                                    const coords = o.geometry.coordinates;
-                                                    return ([coords[0], coords[1]])
-                                                })}
-                                                rowHeaders={true}
-                                                colHeaders={["Lon", "Lat"]}
-                                                height="auto"
-                                                licenseKey="non-commercial-and-evaluation" // for non-commercial use only
-                                            /> : <div>
-                                                Add outlets using the tools on the left.
+                                    {!autoMode && <div>
+                                        <div>
+                                            {outlets && outlets.features.length ?
+                                                <HotTable
+                                                    data={outlets.features.map(o => {
+                                                        const coords = o.geometry.coordinates;
+                                                        return ([coords[0], coords[1]])
+                                                    })}
+                                                    rowHeaders={true}
+                                                    colHeaders={["Lon", "Lat"]}
+                                                    height="auto"
+                                                    licenseKey="non-commercial-and-evaluation" // for non-commercial use only
+                                                /> : <div>
+                                                    Add outlets by left-clicking on the map.
+                                                </div>}
+                                        </div>
+                                        {outlets && <div style={{marginTop: 10, marginBottom: 10}}>
+                                            <Button onClick={handleDelineateMany}>{("Submit")}</Button>
+                                        </div>}
+                                    </div>}
+                                    {working && <div>Processing...</div>}
+                                    <div className="bottom">
+                                        {(catchment || catchments) &&
+                                            <div>
+
+                                                {/*<FormLabel>Simplify</FormLabel>*/}
+                                                {/*<Slider defaultValue={0} step={simplifyMax/10} min={0} max={simplifyMax}*/}
+                                                {/*        onChange={handleChangeSimplification}/>*/}
+
+                                                {/*<Button variant="contained">Shapefile</Button>*/}
+                                                {((autoMode && outlet) || outlets) &&
+                                                    <Button onClick={handleDownloadOutlets}>Download
+                                                        Outlets</Button>}
+                                                {((autoMode && catchment) || catchments) &&
+                                                    <Button onClick={handleDownloadCatchments}>Download
+                                                        Catchments</Button>}
                                             </div>}
                                     </div>
-                                    <div style={{marginTop: 10, marginBottom: 10}}>
-                                        <Button variant="contained">{("Submit")}</Button>
-                                    </div>
-                                </div>}
-                                {working && <div>Processing...</div>}
-                                <Snackbar open={success} onClose={hideSuccess} autoHideDuration={5000}>
-                                    <Alert onClose={hideSuccess} severity="success"
-                                           sx={{width: '100%'}}>Success!</Alert>
-                                </Snackbar>
-                                <div className="bottom">
-                                    {(catchment || catchments) &&
-                                        <div>
 
-                                            {/*<FormLabel>Simplify</FormLabel>*/}
-                                            {/*<Slider defaultValue={0} step={simplifyMax/10} min={0} max={simplifyMax}*/}
-                                            {/*        onChange={handleChangeSimplification}/>*/}
-
-                                            {/*<Button variant="contained">Shapefile</Button>*/}
-                                            <Button variant="contained" onClick={handleDownloadGeoJSON}>Download
-                                                GeoJSON</Button>
-                                        </div>}
-                                </div>
-
-                            </Panel>
-
-                            <Panel value="settings">
-                                <FormControl style={{width: "100%", marginTop: 15}}>
-                                    <FormLabel>Resolution (arc seconds)</FormLabel>
-                                    <RadioGroup row value={resolution} onChange={handleChangeResolution}>
-                                        {resolutions.map(res => <FormControlLabel key={res} value={res}
-                                                                                  control={<Radio/>}
-                                                                                  label={`${res}"`}/>)}
+                                </Panel>
+                            }/>
+                            <Tab id="settings" title={("Settings")} panel={
+                                <Panel>
+                                    <RadioGroup label={("Resolution (arc seconds)")} large inline
+                                                selectedValue={resolution} onChange={handleChangeResolution}>
+                                        {resolutions.map(res => <Radio key={res} label={`${res}"`} value={res}/>)}
                                     </RadioGroup>
-                                    <FormLabel>Streamlines</FormLabel>
-                                    <FormControlLabel
-                                        control={<Checkbox checked={showStreamlines} onChange={toggleStreamlines}/>}
-                                        label={("Show streamlines")}/>
-                                    {showStreamlines &&
-                                        <div>
-                                            <FormLabel>Streamline density</FormLabel>
-                                            <Slider value={tempStreamlinesThreshold || streamlinesThreshold} step={5}
-                                                    marks={thresholdMarks}
-                                                    min={0} max={100} style={{width: "100%"}}
-                                                    valueLabelDisplay="auto"
-                                                    onChange={(e, value) => setTempStreamlinesThreshold(value)}
-                                                    onChangeCommitted={handleChangeThreshold}/>
-                                            <FormLabel>Streamline opacity</FormLabel>
-                                            <Slider step={5} marks={opacityMarks} min={0} max={100}
-                                                    style={{width: "100%"}} value={streamlinesOpacity}
-                                                    valueLabelDisplay="auto" onChange={handleChangeOpacity}/>
+
+                                    <FormGroup
+                                        label={<Switch large checked={showStreamlines} onChange={toggleStreamlines}
+                                                       label={("Show streamlines")}/>}>
+
+                                        {showStreamlines &&
+                                            <div>
+                                                <FormGroup label={("Streamline density")}>
+                                                    <Slider value={tempStreamlinesThreshold || streamlinesThreshold}
+                                                            min={0}
+                                                            max={100}
+                                                            stepSize={5}
+                                                            labelStepSize={25}
+                                                            onChange={handleChangeTempThreshold}
+                                                            onRelease={handleChangeThreshold}/>
+                                                </FormGroup>
+                                                <FormGroup label={("Streamline opacity")}>
+                                                    <Slider value={streamlinesOpacity}
+                                                            min={0}
+                                                            max={100}
+                                                            stepSize={5}
+                                                            labelStepSize={25}
+                                                            onChange={handleChangeOpacity}/>
+                                                </FormGroup>
 
 
-                                        </div>}
-                                    <FormControlLabel
-                                        control={<Switch checked={showTerrain} onChange={toggleShowTerrain}/>}
-                                        label={("Show 3-D terrain")}/>
-                                    <FormControlLabel
-                                        control={<Switch checked={autoZoom} onChange={handleChangeAutoZoom}/>}
-                                        label={("Autozoom")}/>
-                                </FormControl>
-                            </Panel>
+                                            </div>}
+                                    </FormGroup>
+                                    <Switch large checked={showTerrain} onChange={toggleShowTerrain}
+                                            label={("Show 3-D terrain")}/>
+                                    <Switch large checked={autoZoom} onChange={handleChangeAutoZoom}
+                                            label={("Autozoom")}/>
+                                </Panel>
+                            }/>
+                            <Tab id="about" title={("About")} panel={
+                                <Panel>
+                                    <p>
+                                        This app is built with <ExternalLink
+                                        href="https://www.hydrosheds.org">HydroSHEDS</ExternalLink> for the source
+                                        grid data, <ExternalLink href="https://mattbartos.com/pysheds/">pysheds
+                                    </ExternalLink> for the
+                                        delineation,
+                                        and&nbsp;
+                                        <ExternalLink href="https://www.mapbox.com">Mapbox</ExternalLink> for the
+                                        mapping
+                                        environment. <ExternalLink
+                                        href="https://www.github.com/openagua/flowdirections.io#readme">Read
+                                        more here</ExternalLink>. The app is also inspired by <ExternalLink
+                                        href="https://geojson.io/">geojson.io</ExternalLink>, which you may find
+                                        useful.
+                                    </p>
+                                    <p>
+                                        "flowdirections" refers to a flow direction grid, a key intermediary in the
+                                        catchment delineation process and other DEM-derived analyses. It also
+                                        invokes
+                                        mapping water and its movement ("hydrography" doesn't roll off the tongue
+                                        as smoothly).
+                                    </p>
+                                    <h4>Feedback</h4>
+                                    <p>
+                                        Would you like to submit a bug or have a suggestion for improvement? Please
+                                        open
+                                        an issue in the site's <ExternalLink
+                                        href="https://github.com/openagua/flowdirections.io/issues">issue
+                                        tracker</ExternalLink>!
+                                    </p>
+                                    <h4>Privacy</h4>
+                                    <p>None of your data is stored with flowdirections.io. The backend server only
+                                        performs
+                                        calculations (<ExternalLink
+                                            href="https://www.github.com/openagua/rapidsheds-api">source
+                                            code</ExternalLink>), while the app that you are
+                                        currently using does not use cookies, and only stores data during your
+                                        session
+                                        (<ExternalLink
+                                            href="https://www.github.com/openagua/flowdirections.io">source
+                                            code</ExternalLink>). This
+                                        may change in the future, in which case you will know about it.</p>
+                                </Panel>
+                            }/>
+                        </Tabs>
 
-                            <Panel value="about">
-                                <p>
-                                    This app is built with <ExternalLink
-                                    href="https://www.hydrosheds.org">HydroSHEDS</ExternalLink> for the source grid
-                                    data, <ExternalLink
-                                    href="https://mattbartos.com/pysheds/">pysheds</ExternalLink> for the delineation,
-                                    and&nbsp;
-                                    <ExternalLink href="https://www.mapbox.com">Mapbox</ExternalLink> for the mapping
-                                    environment. <ExternalLink
-                                    href="https://www.github.com/openagua/flowdirections.io#readme">Read
-                                    more here</ExternalLink>. The app is also inspired by <ExternalLink
-                                    href="https://geojson.io/">geojson.io</ExternalLink>, which you may find useful.
-                                </p>
-                                <p>
-                                    "flowdirections" refers to a flow direction grid, a key intermediary in the
-                                    catchment delineation process and other DEM-derived analyses. It also invokes
-                                    mapping water and its movement ("hydrography" doesn't roll off the tongue
-                                    as smoothly).
-                                </p>
-                                <h4>Feedback</h4>
-                                <p>
-                                    Would you like to submit a bug or have a suggestion for improvement? Please open
-                                    an issue in the site's <ExternalLink
-                                    href="https://github.com/openagua/flowdirections.io/issues">issue
-                                    tracker</ExternalLink>!
-                                </p>
-                                <h4>Privacy</h4>
-                                <p>None of your data is stored with flowdirections.io. The backend server only performs
-                                    calculations (<ExternalLink
-                                        href="https://www.github.com/openagua/rapidsheds-api">source
-                                        code</ExternalLink>), while the app that you are
-                                    currently using does not use cookies, and only stores data during your session
-                                    (<ExternalLink
-                                        href="https://www.github.com/openagua/flowdirections.io">source
-                                        code</ExternalLink>). This
-                                    may change in the future, in which case you will know about it.</p>
-                            </Panel>
-
-                        </TabContext>
                     </div>
                 </div>
             </div>

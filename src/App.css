@@ -17,3 +17,7 @@
     width: 100%;
     padding: 5px;
 }
+
+div, span {
+    outline: none !important;
+}
