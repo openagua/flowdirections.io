@@ -5,6 +5,7 @@ import mapboxgl from "mapbox-gl";
 import {
     Button,
     FormGroup,
+    H5,
     Menu,
     Navbar,
     NavbarGroup,
@@ -15,7 +16,7 @@ import {
     Tab,
     Tabs,
     Toaster,
-    Spinner
+    Spinner, ButtonGroup
 } from "@blueprintjs/core";
 
 import {MenuItem2, Popover2} from "@blueprintjs/popover2";
@@ -230,7 +231,15 @@ const App = () => {
         });
     }
 
-    const handleChangeLocked = () => setLocked(!locked);
+    const handleChangeLocked = () => {
+        const newLocked = !locked;
+        setLocked(newLocked);
+        if (newLocked) {
+            setCursor('pointer');
+        } else {
+            setCursor('crosshair');
+        }
+    };
 
     const handleAddOutlet = ({lngLat}) => {
         const {lng: lon, lat} = lngLat;
@@ -264,7 +273,7 @@ const App = () => {
         setWorking(true);
         setCatchment(null);
         const coords = newOutlet.geometry.coordinates;
-        api.get('delineate', {params: {lat: coords[1], lon: coords[0], res: resolution}}).then(({data}) => {
+        api.get('catchment', {params: {lat: coords[1], lon: coords[0], res: resolution}}).then(({data}) => {
             setCatchment(data);
             originalCatchment.current = data;
             setWorking(false);
@@ -278,7 +287,7 @@ const App = () => {
     const handleDelineateMany = () => {
         setWorking(true);
         setCatchments(null);
-        api.post('delineate', outlets, {params: {res: resolution}}).then(({data}) => {
+        api.post('delineate_catchments', outlets, {params: {res: resolution}}).then(({data}) => {
             setCatchments(data);
             originalCatchment.current = data;
             setWorking(false);
@@ -287,18 +296,6 @@ const App = () => {
             autoZoom && flyTo(data);
         });
     }
-
-    const outletCoords = outlet ? outlet.geometry.coordinates : null;
-
-    // useEffect(() => {
-    //     if (map.current) {
-    //         if (autoMode) {
-    //             map.current.getCanvas().style.cursor = 'pointer';
-    //         } else {
-    //             map.current.getCanvas().style.cursor = 'crosshair';
-    //         }
-    //     }
-    // }, [autoMode])
 
     const getCursor = () => map.current.getCanvas().style.cursor;
 
@@ -453,16 +450,16 @@ const App = () => {
             <Navbar>
                 <NavbarGroup align="left">
                     <Navbar.Heading>flowdirections.io</Navbar.Heading>
-                    <Popover2 position="bottom-left" minimal content={
-                        <Menu>
-                            <MenuItem2 text={("Download outlets")}>
-                                <MenuItem2 text={("GeoJSON")}/>
-                                <MenuItem2 text={("Shapefile")}/>
-                            </MenuItem2>
-                        </Menu>
-                    }>
-                        <Button intent="primary" minimal>{("File")}</Button>
-                    </Popover2>
+                    {/*<Popover2 position="bottom-left" minimal content={*/}
+                    {/*    <Menu>*/}
+                    {/*        <MenuItem2 text={("Download outlets")}>*/}
+                    {/*            <MenuItem2 text={("GeoJSON")}/>*/}
+                    {/*            <MenuItem2 text={("Shapefile")}/>*/}
+                    {/*        </MenuItem2>*/}
+                    {/*    </Menu>*/}
+                    {/*}>*/}
+                    {/*    <Button intent="primary" minimal>{("File")}</Button>*/}
+                    {/*</Popover2>*/}
                     <Switch large label={"Lock editing"} style={{margin: 0, marginLeft: 10}} checked={locked}
                             onChange={handleChangeLocked}/>
                 </NavbarGroup>
@@ -541,8 +538,8 @@ const App = () => {
                         <Tabs id="sidebar-tabs" large>
                             <Tab id="home" title="Home" panel={
                                 <Panel>
-                                    <Button fill large icon="eraser" onClick={handleClearWorkspace}>Clear
-                                        workspace</Button>
+                                    <Button fill large icon="eraser" onClick={handleClearWorkspace}>
+                                        {("Clear workspace")}</Button>
                                     <br/>
                                     <FormGroup
                                         helperText={("Auto mode will delineate a catchment as soon as you left-click a map")}>
@@ -578,12 +575,28 @@ const App = () => {
                                                 {/*        onChange={handleChangeSimplification}/>*/}
 
                                                 {/*<Button variant="contained">Shapefile</Button>*/}
-                                                {((autoMode && outlet) || outlets) &&
-                                                    <Button onClick={handleDownloadOutlets}>Download
-                                                        Outlets</Button>}
-                                                {((autoMode && catchment) || catchments) &&
-                                                    <Button onClick={handleDownloadCatchments}>Download
-                                                        Catchments</Button>}
+                                                <div className="download-area">
+                                                    {((autoMode && outlet) || outlets) &&
+                                                        <div>
+                                                            <H5>Download outlets</H5>
+                                                            <div>
+                                                                <Button small onClick={handleDownloadOutlets}>GeoJSON</Button>
+                                                                <Button small
+                                                                    onClick={handleDownloadOutlets}>Shapefile</Button>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                    {((autoMode && catchment) || catchments) &&
+                                                        <div>
+                                                            <H5>Download catchments</H5>
+                                                            <div>
+                                                                <Button small onClick={handleDownloadCatchments}>GeoJSON</Button>
+                                                                <Button small
+                                                                    onClick={handleDownloadCatchments}>Shapefile</Button>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
                                             </div>}
                                     </div>
 
