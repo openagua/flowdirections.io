@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState} from "react";
 import axios from "axios";
-import mapboxgl from "mapbox-gl";
+import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
+
 
 import {
     Button,
@@ -41,7 +42,7 @@ import '@blueprintjs/icons/lib/css/blueprint-icons.css';
 import '@blueprintjs/core/lib/css/blueprint.css';
 
 import 'mapbox-gl/dist/mapbox-gl.css';
-import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
+// import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import 'handsontable/dist/handsontable.full.min.css';
 
@@ -165,6 +166,14 @@ const App = () => {
     const [success, setSuccess] = useState(false);
     const [selectedTab, setSelectedTab] = useState("home");
     const [showTerrain, setShowTerrain] = useState(false);
+    const [showStreamlines, setShowStreamlines] = useState(true);
+    const [streamlinesThreshold, setStreamlinesThreshold] = useState(50);
+    const [tempStreamlinesThreshold, setTempStreamlinesThreshold] = useState();
+    const [streamlinesOpacity, setStreamlinesOpacity] = useState(50);
+    const [simplification, setSimplification] = useState(0);
+    const [streamlinesTiles, setStreamlinesTiles] = useState();
+    const [autoZoom, setAutoZoom] = useState(false);
+    const [locked, setLocked] = useState(false);
 
     const [viewState, setViewState] = useState(() => {
         let initialViewState = {
@@ -188,15 +197,6 @@ const App = () => {
         }
         return initialViewState;
     })
-
-    const [showStreamlines, setShowStreamlines] = useState(true);
-    const [streamlinesThreshold, setStreamlinesThreshold] = useState(50);
-    const [tempStreamlinesThreshold, setTempStreamlinesThreshold] = useState();
-    const [streamlinesOpacity, setStreamlinesOpacity] = useState(50);
-    const [simplification, setSimplification] = useState(0);
-    const [streamlinesTiles, setStreamlinesTiles] = useState();
-    const [autoZoom, setAutoZoom] = useState(false);
-    const [locked, setLocked] = useState(false);
 
     useEffect(() => {
         setStreamlinesTiles(null);
@@ -580,9 +580,10 @@ const App = () => {
                                                         <div>
                                                             <H5>Download outlets</H5>
                                                             <div>
-                                                                <Button small onClick={handleDownloadOutlets}>GeoJSON</Button>
                                                                 <Button small
-                                                                    onClick={handleDownloadOutlets}>Shapefile</Button>
+                                                                        onClick={handleDownloadOutlets}>GeoJSON</Button>
+                                                                <Button small
+                                                                        onClick={handleDownloadOutlets}>Shapefile</Button>
                                                             </div>
                                                         </div>
                                                     }
@@ -590,9 +591,10 @@ const App = () => {
                                                         <div>
                                                             <H5>Download catchments</H5>
                                                             <div>
-                                                                <Button small onClick={handleDownloadCatchments}>GeoJSON</Button>
                                                                 <Button small
-                                                                    onClick={handleDownloadCatchments}>Shapefile</Button>
+                                                                        onClick={handleDownloadCatchments}>GeoJSON</Button>
+                                                                <Button small
+                                                                        onClick={handleDownloadCatchments}>Shapefile</Button>
                                                             </div>
                                                         </div>
                                                     }
