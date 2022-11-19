@@ -1,7 +1,6 @@
 import {useEffect, useRef, useState} from "react";
 import axios from "axios";
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
-import cspWorker from "mapbox-gl/dist/mapbox-gl-csp-worker";
 
 import {round} from "./utils";
 
@@ -49,8 +48,6 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import 'handsontable/dist/handsontable.full.min.css';
 
 import './App.css';
-
-mapboxgl.workerClass = cspWorker.default;
 
 const api = axios.create({
     baseURL: process.env.NODE_ENV === 'development' ? 'http://localhost:8000/' : process.env.REACT_APP_API_ENDPOINT
