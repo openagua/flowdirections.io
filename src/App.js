@@ -2,12 +2,12 @@ import {useEffect, useRef, useState} from "react";
 import axios from "axios";
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
 
+import {round} from "./utils";
 
 import {
     Button,
     FormGroup,
     H5,
-    Menu,
     Navbar,
     NavbarGroup,
     Radio,
@@ -17,10 +17,8 @@ import {
     Tab,
     Tabs,
     Toaster,
-    Spinner, ButtonGroup
+    Spinner
 } from "@blueprintjs/core";
-
-import {MenuItem2, Popover2} from "@blueprintjs/popover2";
 
 import Map, {
     GeolocateControl,
@@ -28,14 +26,17 @@ import Map, {
     Layer,
     NavigationControl,
     ScaleControl,
-    Marker,
 } from 'react-map-gl';
 import {HotTable} from '@handsontable/react';
 import FileSaver from 'file-saver';
 
 import SearchControl from "./controls/SearchControl";
 
-import {rdp} from "./utils";
+// import {rdp} from "./utils";
+
+import {OutletMarker, CatchmentSource, ExternalLink} from "./components";
+
+// STYLES
 
 import 'normalize.css/normalize.css';
 import '@blueprintjs/icons/lib/css/blueprint-icons.css';
@@ -70,8 +71,6 @@ const styles = [{
 
 const mapboxAccessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 
-const round = (x, n) => Math.round(x * n) / n;
-
 const createOutlet = (lon, lat, id) => {
     return (
         {
@@ -88,62 +87,6 @@ const createOutlet = (lon, lat, id) => {
     )
 }
 
-const OutletMarker = ({outlet, draggable, onDragEnd}) => {
-    const handleMoveOutlet = ({lngLat}) => {
-        const {lng, lat} = lngLat;
-        const newOutlet = {
-            ...outlet,
-            geometry: {
-                ...outlet.geometry,
-                coordinates: [lng, lat]
-            }
-        }
-        onDragEnd(newOutlet);
-    }
-    const coords = outlet.geometry.coordinates;
-    return (
-        <Marker
-            longitude={coords[0]}
-            latitude={coords[1]}
-            draggable={draggable}
-            mapboxgl={mapboxgl}
-            onDragEnd={handleMoveOutlet}
-            offset={[0, 0]}
-            anchor="bottom"
-        />
-    )
-}
-
-const CatchmentSource = ({data}) => {
-    const sourceId = "catchments-geojson";
-
-    if (!data) {
-        return null;
-    }
-
-    return (
-        <Source id={sourceId} type="geojson" data={data}>
-            <Layer
-                id="catchments-fill"
-                type="fill"
-                paint={{
-                    'fill-color': '#4E3FC8',
-                    'fill-opacity': 0.5,
-                }}
-            />
-            <Layer
-                id="catchments-outline"
-                type="line"
-                paint={{
-                    'line-color': '#4E3FC8',
-                    'line-width': 3
-                }}
-            />
-        </Source>
-    )
-}
-
-const ExternalLink = (props) => <a {...props} target="_blank" rel="noreferrer"/>
 
 const resolutions = [15, 30];
 
@@ -154,8 +97,8 @@ const App = () => {
     const cursor = useRef();
     const originalCatchment = useRef();
 
-    const [menuOpen, setMenuOpen] = useState(false);
-    const [mapStyle, setMapStyle] = useState(styles[0]);
+    // const [menuOpen, setMenuOpen] = useState(false);
+    const [mapStyle] = useState(styles[0]);
     const [outlet, setOutlet] = useState(null);
     const [resolution, setResolution] = useState(30);
     const [outlets, setOutlets] = useState();
@@ -163,19 +106,19 @@ const App = () => {
     const [catchments, setCatchments] = useState(null);
     const [catchment, setCatchment] = useState(null);
     const [working, setWorking] = useState(false);
-    const [success, setSuccess] = useState(false);
-    const [selectedTab, setSelectedTab] = useState("home");
+    // const [success, setSuccess] = useState(false);
+    // const [selectedTab, setSelectedTab] = useState("home");
     const [showTerrain, setShowTerrain] = useState(false);
     const [showStreamlines, setShowStreamlines] = useState(true);
     const [streamlinesThreshold, setStreamlinesThreshold] = useState(50);
     const [tempStreamlinesThreshold, setTempStreamlinesThreshold] = useState();
     const [streamlinesOpacity, setStreamlinesOpacity] = useState(50);
-    const [simplification, setSimplification] = useState(0);
+    // const [simplification, setSimplification] = useState(0);
     const [streamlinesTiles, setStreamlinesTiles] = useState();
     const [autoZoom, setAutoZoom] = useState(false);
     const [locked, setLocked] = useState(false);
 
-    const [viewState, setViewState] = useState(() => {
+    const [viewState] = useState(() => {
         let initialViewState = {
             longitude: -116.1,
             latitude: 37.7,
@@ -208,10 +151,6 @@ const App = () => {
                 })
         }
     }, [resolution, showStreamlines, streamlinesThreshold]);
-
-    const hideSuccess = () => {
-        setSuccess(false);
-    }
 
     const toggleStreamlines = () => {
         setShowStreamlines(!showStreamlines);
@@ -277,7 +216,7 @@ const App = () => {
             setCatchment(data);
             originalCatchment.current = data;
             setWorking(false);
-            setSuccess(true);
+            // setSuccess(true);
             toast.show({message: "Success!", intent: "success"});
 
             autoZoom && flyTo(data);
@@ -314,7 +253,7 @@ const App = () => {
 
     const handleMoveEnd = (e) => {
         setCursor(cursor.current);
-        const {latitude, longitude, zoom, bearing, pitch} = e.viewState;
+        const {latitude, longitude, zoom, bearing} = e.viewState;
         const newHash = `#map=${round(latitude, 1000)}/${round(longitude, 1000)}/${round(zoom, 10)}/${round(bearing, 10)}`;
         const newLocation = document.location.href.replace(document.location.hash, newHash);
         window.history.replaceState({}, 'test', newLocation);
@@ -374,33 +313,33 @@ const App = () => {
         setAutoZoom(!autoZoom)
     }
 
-    const handleChangeSimplification = (e, value) => {
-        setSimplification(value);
-        const newFeatures = originalCatchment.current.features.map(feature => {
-            const newCoordinates = feature.geometry.coordinates.map(coords => rdp(coords, value));
-            return (
-                {
-                    ...feature,
-                    geometry: {
-                        ...feature.geometry,
-                        coordinates: newCoordinates
-                    }
-                }
-            )
-        });
-        setCatchment({
-            ...catchment,
-            features: newFeatures
-        });
-    }
+    // const handleChangeSimplification = (e, value) => {
+    //     setSimplification(value);
+    //     const newFeatures = originalCatchment.current.features.map(feature => {
+    //         const newCoordinates = feature.geometry.coordinates.map(coords => rdp(coords, value));
+    //         return (
+    //             {
+    //                 ...feature,
+    //                 geometry: {
+    //                     ...feature.geometry,
+    //                     coordinates: newCoordinates
+    //                 }
+    //             }
+    //         )
+    //     });
+    //     setCatchment({
+    //         ...catchment,
+    //         features: newFeatures
+    //     });
+    // }
 
     const handleChangeResolution = (e) => {
         setResolution(Number(e.target.value));
     }
 
-    const handleChangeStyle = (styleId) => {
-        setMapStyle(styles.find(s => s.id === styleId));
-    }
+    // const handleChangeStyle = (styleId) => {
+    //     setMapStyle(styles.find(s => s.id === styleId));
+    // }
 
     const changeMode = () => {
         setAutoMode(!autoMode);
@@ -423,9 +362,9 @@ const App = () => {
         setCatchments(null);
     }
 
-    const changeSelectedTab = (e, value) => {
-        setSelectedTab(value);
-    }
+    // const changeSelectedTab = (e, value) => {
+    //     setSelectedTab(value);
+    // }
 
     const sidebarWidth = 350;
     const sidebarPadding = 0;
@@ -668,6 +607,16 @@ const App = () => {
                                         mapping water and its movement ("hydrography" doesn't roll off the tongue
                                         as smoothly).
                                     </p>
+                                    <h4>Other similar/related tools</h4>
+                                    <ul>
+                                        <li><ExternalLink href="https://river-runner-global.samlearner.com/">River
+                                            Runner</ExternalLink>: "Tap to drop a raindrop anywhere in the world and
+                                            watch where it ends up"
+                                        </li>
+                                        <li><ExternalLink href="https://streamstats.usgs.gov/ss/">USGS
+                                            StreamStats</ExternalLink>: U.S.-only stream info, including delineation
+                                        </li>
+                                    </ul>
                                     <h4>Feedback</h4>
                                     <p>
                                         Would you like to submit a bug or have a suggestion for improvement? Please

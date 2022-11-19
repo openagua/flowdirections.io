@@ -106,7 +106,7 @@ function getPerpDist(point, line) {
  *
  * @return {2D Array}
  */
-export function rdp(points, epsilonTolerance) {
+export const rdp = (points, epsilonTolerance) => {
     let maxDist = 0;
     let index = 0;
 
@@ -125,4 +125,6 @@ export function rdp(points, epsilonTolerance) {
 
     return [points[0], points[points.length - 1]];
 }
+
+export const round = (x, n) => Math.round(x * n) / n;
 
