@@ -413,7 +413,7 @@ const App = () => {
             </div>
             <Navbar>
                 <NavbarGroup align="left">
-                    <Navbar.Heading><a href="https://www.flowdirections.io">flowdirections.io</a></Navbar.Heading>
+                    <Navbar.Heading><a href="https://flowdirections.netlify.app">flowdirections.io</a></Navbar.Heading>
                     {/*<Popover2 position="bottom-left" minimal content={*/}
                     {/*    <Menu>*/}
                     {/*        <MenuItem2 text={("Download outlets")}>*/}
