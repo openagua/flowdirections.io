@@ -426,7 +426,7 @@ const App = () => {
                     {/*</Popover2>*/}
                     <Switch large label={"Lock editing"} style={{margin: 0, marginLeft: 10}} checked={locked}
                             onChange={handleChangeLocked}/>
-                    <Button minimal icon={dark ? "lightbulb" : "moon"} style={{marginLeft: 10}} onClick={() => setDark(!dark)}/>
+                    <Button minimal icon={dark ? "flash" : "moon"} style={{marginLeft: 10}} onClick={() => setDark(!dark)}/>
                 </NavbarGroup>
                 <NavbarGroup align="right">
                     <a href={process.env.REACT_APP_DONATE_LINK} target="_blank" rel="noreferrer"
