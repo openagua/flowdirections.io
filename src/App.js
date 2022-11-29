@@ -17,7 +17,8 @@ import {
     Tab,
     Tabs,
     Toaster,
-    Spinner
+    Spinner,
+    Colors
 } from "@blueprintjs/core";
 
 import Map, {
@@ -48,6 +49,7 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import 'handsontable/dist/handsontable.full.min.css';
 
 import './App.css';
+import {DARK} from "@blueprintjs/core/lib/esnext/common/classes";
 
 const api = axios.create({
     baseURL: process.env.NODE_ENV === 'development' ? 'http://localhost:8000/' : process.env.REACT_APP_API_ENDPOINT
@@ -98,11 +100,12 @@ const App = () => {
     const originalCatchment = useRef();
 
     // const [menuOpen, setMenuOpen] = useState(false);
+    const [dark, setDark] = useState(false);
     const [mapStyle] = useState(styles[0]);
     const [outlet, setOutlet] = useState(null);
     const [resolution, setResolution] = useState(30);
     const [outlets, setOutlets] = useState();
-    const [autoMode, setAutoMode] = useState(false);
+    const [autoMode, setAutoMode] = useState(true);
     const [catchments, setCatchments] = useState(null);
     const [catchment, setCatchment] = useState(null);
     const [working, setWorking] = useState(false);
@@ -124,17 +127,19 @@ const App = () => {
             latitude: 37.7,
             zoom: 5,
             bearing: 0,
+            pitch: 0,
         };
         const parts = document.location.hash.split('=');
         if (parts.length === 2) {
             const locs = parts[1].split('/');
             if (locs.length === 4) {
-                const [latitude, longitude, zoom, bearing] = locs;
+                const [latitude, longitude, zoom, bearing, pitch] = locs;
                 initialViewState = {
                     longitude: Number(longitude),
                     latitude: Number(latitude),
                     zoom: Number(zoom),
-                    bearing: Number(bearing)
+                    bearing: Number(bearing),
+                    pitch: Number(pitch),
                 }
             }
         }
@@ -253,15 +258,27 @@ const App = () => {
 
     const handleMoveEnd = (e) => {
         setCursor(cursor.current);
-        const {latitude, longitude, zoom, bearing} = e.viewState;
-        const newHash = `#map=${round(latitude, 1000)}/${round(longitude, 1000)}/${round(zoom, 10)}/${round(bearing, 10)}`;
-        const newLocation = document.location.href.replace(document.location.hash, newHash);
-        window.history.replaceState({}, 'test', newLocation);
+        const {latitude, longitude, zoom, bearing, pitch} = e.viewState;
+        const _lat = round(latitude, 1000);
+        const _lon = round(longitude, 1000);
+        const _zoom = round(zoom, 10);
+        const _bearing = round(bearing, 10);
+        const _pitch = round(pitch, 10);
+        const newHash = `#map=${_lat}/${_lon}/${_zoom}/${_bearing}/${_pitch}`;
+        const currentHash = document.location.hash;
+        const newLocation = currentHash ? document.location.href.replace(currentHash, newHash) : document.location.href + newHash;
+        window.history.replaceState({}, '', newLocation);
     }
 
     const toggleShowTerrain = () => {
         setShowTerrain(!showTerrain);
     }
+
+    useEffect(() => {
+        if (map.current) {
+            setCursor('crosshair')
+        }
+    }, [map])
 
     useEffect(() => {
         if (!map.current) {
@@ -373,7 +390,14 @@ const App = () => {
     // const simplifyMax = 0.01;
 
     return (
-        <div className="">
+        <div className={dark ? DARK : null} style={{
+            background: dark ? Colors.BLACK : Colors.WHITE,
+            position: "fixed",
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 9
+        }}>
             <div style={{
                 display: working ? "flex" : "none",
                 position: "fixed",
@@ -384,11 +408,12 @@ const App = () => {
                 zIndex: 100,
                 background: "rgba(0,0,0,0.5)"
             }}>
-                <Spinner size={150} intent="none" style={{margin: "auto"}}/>
+                <Spinner size={100} intent="none"
+                         style={{margin: "auto", padding: 25, borderRadius: 10, background: "rgba(0,0,0,0.5)"}}/>
             </div>
             <Navbar>
                 <NavbarGroup align="left">
-                    <Navbar.Heading>flowdirections.io</Navbar.Heading>
+                    <Navbar.Heading><a href="https://www.flowdirections.io">flowdirections.io</a></Navbar.Heading>
                     {/*<Popover2 position="bottom-left" minimal content={*/}
                     {/*    <Menu>*/}
                     {/*        <MenuItem2 text={("Download outlets")}>*/}
@@ -401,6 +426,7 @@ const App = () => {
                     {/*</Popover2>*/}
                     <Switch large label={"Lock editing"} style={{margin: 0, marginLeft: 10}} checked={locked}
                             onChange={handleChangeLocked}/>
+                    <Button minimal icon={dark ? "lightbulb" : "moon"} style={{marginLeft: 10}} onClick={() => setDark(!dark)}/>
                 </NavbarGroup>
                 <NavbarGroup align="right">
                     <a href={process.env.REACT_APP_DONATE_LINK} target="_blank" rel="noreferrer"
@@ -414,7 +440,7 @@ const App = () => {
                 top: navbarHeight,
                 bottom: 0,
                 left: 0,
-                right: 0
+                right: 0,
             }}>
                 <Map
                     ref={map}
@@ -430,6 +456,7 @@ const App = () => {
                         left: 0,
                         width: null,
                         right: sidebarWidth,
+                        // background: dark ? "black" : "white"
                     }}
                     mapStyle={mapStyle.styleUrl}
                     mapboxAccessToken={mapboxAccessToken}
@@ -470,7 +497,8 @@ const App = () => {
                         height: "100%",
                         right: 0,
                         width: sidebarWidth - sidebarPadding * 2,
-                        padding: sidebarPadding
+                        padding: sidebarPadding,
+                        boxShadow: `0 0 2px 0px ${dark ? "white" : "black"}`,
                     }}
                 >
                     <div style={{padding: 10}}>
@@ -501,10 +529,9 @@ const App = () => {
                                                 </div>}
                                         </div>
                                         {outlets && <div style={{marginTop: 10, marginBottom: 10}}>
-                                            <Button onClick={handleDelineateMany}>{("Submit")}</Button>
+                                            <Button intent="primary" onClick={handleDelineateMany}>{("Submit")}</Button>
                                         </div>}
                                     </div>}
-                                    {working && <div>Processing...</div>}
                                     <div className="bottom">
                                         {(catchment || catchments) &&
                                             <div>
