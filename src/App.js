@@ -52,7 +52,8 @@ import './App.css';
 import {DARK} from "@blueprintjs/core/lib/esnext/common/classes";
 
 const api = axios.create({
-    baseURL: process.env.NODE_ENV === 'development' ? 'http://localhost:8000/' : process.env.REACT_APP_API_ENDPOINT
+    baseURL: process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8000/' : process.env.REACT_APP_API_ENDPOINT,
+    withCredentials: false,
     // timeout: 1000,
     // headers: {'X-Custom-Header': 'foobar'}
 });
