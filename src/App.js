@@ -122,20 +122,20 @@ const App = () => {
     const [autoZoom, setAutoZoom] = useState(false);
     const [locked, setLocked] = useState(false);
 
-    const [viewState] = useState(() => {
-        let initialViewState = {
+    const [initialViewState] = useState(() => {
+        let _initialViewState = {
             longitude: -116.1,
             latitude: 37.7,
             zoom: 5,
-            bearing: 0,
-            pitch: 0,
+            // bearing: 0,
+            // pitch: 0,
         };
         const parts = document.location.hash.split('=');
         if (parts.length === 2) {
             const locs = parts[1].split('/');
-            if (locs.length === 4) {
+            if (locs.length === 5) {
                 const [latitude, longitude, zoom, bearing, pitch] = locs;
-                initialViewState = {
+                _initialViewState = {
                     longitude: Number(longitude),
                     latitude: Number(latitude),
                     zoom: Number(zoom),
@@ -144,7 +144,7 @@ const App = () => {
                 }
             }
         }
-        return initialViewState;
+        return _initialViewState;
     })
 
     useEffect(() => {
@@ -445,7 +445,7 @@ const App = () => {
             }}>
                 <Map
                     ref={map}
-                    initialViewState={viewState}
+                    initialViewState={initialViewState}
                     maxPitch={85}
                     onLoad={handleLoadMap}
                     onClick={locked ? null : handleAddOutlet}
