@@ -653,7 +653,7 @@ const App = () => {
                                     <p>None of your data is stored with flowdirections.io. The backend server only
                                         performs
                                         calculations (<ExternalLink
-                                            href="https://www.github.com/openagua/rapidsheds-api">source
+                                            href="https://www.github.com/openagua/flowdirections-api">source
                                             code</ExternalLink>), while the app that you are
                                         currently using does not use cookies, and only stores data on your computer,
                                         during your session
