@@ -427,7 +427,8 @@ const App = () => {
                     {/*</Popover2>*/}
                     <Switch large label={"Lock editing"} style={{margin: 0, marginLeft: 10}} checked={locked}
                             onChange={handleChangeLocked}/>
-                    <Button minimal icon={dark ? "flash" : "moon"} style={{marginLeft: 10}} onClick={() => setDark(!dark)}/>
+                    <Button minimal icon={dark ? "flash" : "moon"} style={{marginLeft: 10}}
+                            onClick={() => setDark(!dark)}/>
                 </NavbarGroup>
                 <NavbarGroup align="right">
                     <a href={process.env.REACT_APP_DONATE_LINK} target="_blank" rel="noreferrer"
@@ -614,15 +615,12 @@ const App = () => {
                             <Tab id="about" title={("About")} panel={
                                 <Panel>
                                     <p>
-                                        This app is built with <ExternalLink
+                                        This app is based on <ExternalLink href="https://mattbartos.com/pysheds/">pysheds
+                                    </ExternalLink>, with <ExternalLink
                                         href="https://www.hydrosheds.org">HydroSHEDS</ExternalLink> for the source
-                                        grid data, <ExternalLink href="https://mattbartos.com/pysheds/">pysheds
-                                    </ExternalLink> for the
-                                        delineation,
-                                        and&nbsp;
+                                        grid data, and&nbsp;
                                         <ExternalLink href="https://www.mapbox.com">Mapbox</ExternalLink> for the
-                                        mapping
-                                        environment. <ExternalLink
+                                        mapping environment. <ExternalLink
                                         href="https://www.github.com/openagua/flowdirections.io#readme">Read
                                         more here</ExternalLink>. The app is also inspired by <ExternalLink
                                         href="https://geojson.io/">geojson.io</ExternalLink>, which you may find
