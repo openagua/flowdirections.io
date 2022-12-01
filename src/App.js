@@ -549,19 +549,19 @@ const App = () => {
                                                             <div>
                                                                 <Button small
                                                                         onClick={handleDownloadOutlets}>GeoJSON</Button>
-                                                                <Button small
-                                                                        onClick={handleDownloadOutlets}>Shapefile</Button>
+                                                                {/*<Button small*/}
+                                                                {/*        onClick={handleDownloadOutlets}>Shapefile</Button>*/}
                                                             </div>
                                                         </div>
                                                     }
                                                     {((autoMode && catchment) || catchments) &&
                                                         <div>
-                                                            <H5>D{autoMode ? ("Download catchment") : ("Download catchment(s)")}</H5>
+                                                            <H5>{autoMode ? ("Download catchment") : ("Download catchment(s)")}</H5>
                                                             <div>
                                                                 <Button small
                                                                         onClick={handleDownloadCatchments}>GeoJSON</Button>
-                                                                <Button small
-                                                                        onClick={handleDownloadCatchments}>Shapefile</Button>
+                                                                {/*<Button small*/}
+                                                                {/*        onClick={handleDownloadCatchments}>Shapefile</Button>*/}
                                                             </div>
                                                         </div>
                                                     }
