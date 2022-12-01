@@ -510,7 +510,7 @@ const App = () => {
                                         {("Clear workspace")}</Button>
                                     <br/>
                                     <FormGroup
-                                        helperText={("Auto mode will delineate a catchment as soon as you left-click a map")}>
+                                        helperText={("Auto mode will delineate a catchment as soon as you left-click a map.")}>
                                         <Switch large checked={autoMode} onChange={changeMode} label={("Auto mode")}/>
                                     </FormGroup>
                                     {!autoMode && <div>
@@ -648,8 +648,7 @@ const App = () => {
                                     <h4>Feedback</h4>
                                     <p>
                                         Would you like to submit a bug or have a suggestion for improvement? Please
-                                        open
-                                        an issue in the site's <ExternalLink
+                                        open an issue in the site's <ExternalLink
                                         href="https://github.com/openagua/flowdirections.io/issues">issue
                                         tracker</ExternalLink>!
                                     </p>
