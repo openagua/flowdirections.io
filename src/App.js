@@ -545,7 +545,7 @@ const App = () => {
                                                 <div className="download-area">
                                                     {((autoMode && outlet) || outlets) &&
                                                         <div>
-                                                            <H5>Download outlets</H5>
+                                                            <H5>{autoMode ? ("Download outlet") : ("Download outlet(s)")}</H5>
                                                             <div>
                                                                 <Button small
                                                                         onClick={handleDownloadOutlets}>GeoJSON</Button>
@@ -556,7 +556,7 @@ const App = () => {
                                                     }
                                                     {((autoMode && catchment) || catchments) &&
                                                         <div>
-                                                            <H5>Download catchments</H5>
+                                                            <H5>D{autoMode ? ("Download catchment") : ("Download catchment(s)")}</H5>
                                                             <div>
                                                                 <Button small
                                                                         onClick={handleDownloadCatchments}>GeoJSON</Button>
