@@ -655,8 +655,8 @@ const App = () => {
                                         calculations (<ExternalLink
                                             href="https://www.github.com/openagua/rapidsheds-api">source
                                             code</ExternalLink>), while the app that you are
-                                        currently using does not use cookies, and only stores data during your
-                                        session
+                                        currently using does not use cookies, and only stores data on your computer,
+                                        during your session
                                         (<ExternalLink
                                             href="https://www.github.com/openagua/flowdirections.io">source
                                             code</ExternalLink>). This
