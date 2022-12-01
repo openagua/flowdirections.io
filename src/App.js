@@ -629,8 +629,7 @@ const App = () => {
                                     <p>
                                         "flowdirections" refers to a flow direction grid, a key intermediary in the
                                         catchment delineation process and other DEM-derived analyses. It also
-                                        invokes
-                                        mapping water and its movement ("hydrography" doesn't roll off the tongue
+                                        invokes mapping water and its movement ("hydrography" doesn't roll off the tongue
                                         as smoothly).
                                     </p>
                                     <h4>Other similar/related tools</h4>
