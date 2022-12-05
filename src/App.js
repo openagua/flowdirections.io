@@ -230,7 +230,7 @@ const App = () => {
             })
             .catch(() => {
                 setWorking(false);
-                toast.show({message: "Uh-oh! Something went wrong."})
+                toast.show({message: "Uh-oh! Something went wrong.", intent: "danger"})
             });
     }
 
