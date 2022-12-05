@@ -218,15 +218,20 @@ const App = () => {
         setWorking(true);
         setCatchment(null);
         const coords = newOutlet.geometry.coordinates;
-        api.get('catchment', {params: {lat: coords[1], lon: coords[0], res: resolution}}).then(({data}) => {
-            setCatchment(data);
-            originalCatchment.current = data;
-            setWorking(false);
-            // setSuccess(true);
-            toast.show({message: "Success!", intent: "success"});
+        api.get('catchment', {params: {lat: coords[1], lon: coords[0], res: resolution}})
+            .then(({data}) => {
+                setCatchment(data);
+                originalCatchment.current = data;
+                setWorking(false);
+                // setSuccess(true);
+                toast.show({message: "Success!", intent: "success"});
 
-            autoZoom && flyTo(data);
-        });
+                autoZoom && flyTo(data);
+            })
+            .catch(() => {
+                setWorking(false);
+                toast.show({message: "Uh-oh! Something went wrong."})
+            });
     }
 
     const handleDelineateMany = () => {
