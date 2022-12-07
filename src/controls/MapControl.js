@@ -28,6 +28,7 @@ class CustomControl {
 }
 
 const MapControl = ({position, component}) => {
+
     const ctrl = useControl(() => {
         return new CustomControl();
     }, {position});
