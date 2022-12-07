@@ -32,6 +32,7 @@ import {HotTable} from '@handsontable/react';
 import FileSaver from 'file-saver';
 
 import SearchControl from "./controls/SearchControl";
+import StylesControl from "./controls/StylesControl";
 
 import {OutletMarker, CatchmentSource, ExternalLink, Panel} from "./components";
 
@@ -56,14 +57,14 @@ const api = axios.create({
     // headers: {'X-Custom-Header': 'foobar'}
 });
 
-const styles = [{
+const mapStyles = [{
     id: 'streets',
     label: 'Streets',
-    styleUrl: 'mapbox://styles/mapbox/streets-v11',
+    url: 'mapbox://styles/mapbox/streets-v11',
 }, {
     id: 'satellite',
     label: 'Satellite',
-    styleUrl: 'mapbox://styles/mapbox/satellite-v9'
+    url: 'mapbox://styles/mapbox/satellite-v9'
 }]
 
 const mapboxAccessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
@@ -121,7 +122,7 @@ const App = () => {
     // const [menuOpen, setMenuOpen] = useState(false);
     const [projection, setProjection] = useState("globe");
     const [dark, setDark] = useState(false);
-    const [mapStyle] = useState(styles[0]);
+    const [mapStyle, setMapStyle] = useState(mapStyles[0]);
     const [outlet, setOutlet] = useState(null);
     const [resolution, setResolution] = useState(30);
     const [outlets, setOutlets] = useState();
@@ -401,9 +402,9 @@ const App = () => {
         setResolution(Number(e.target.value));
     }
 
-    // const handleChangeStyle = (styleId) => {
-    //     setMapStyle(styles.find(s => s.id === styleId));
-    // }
+    const handleChangeMapStyle = (styleId) => {
+        setMapStyle(mapStyles.find(s => s.id === styleId));
+    }
 
     const changeMode = () => {
         setAutoMode(!autoMode);
@@ -507,7 +508,7 @@ const App = () => {
                         right: sidebarWidth,
                         // background: dark ? "black" : "white"
                     }}
-                    mapStyle={mapStyle.styleUrl}
+                    mapStyle={mapStyle.url}
                     mapboxAccessToken={mapboxAccessToken}
                     projection={projection}
                 >
@@ -521,7 +522,7 @@ const App = () => {
                     {/*    controls={{point: true, trash: true}}*/}
                     {/*    onUpdate={setOutlets}*/}
                     {/*/>}*/}
-                    {/*<StylesControl position="bottom-left" styles={styles} onChange={handleChangeStyle}/>*/}
+                    <StylesControl position="bottom-left" mapStyles={mapStyles} onChange={handleChangeMapStyle}/>
                     <ScaleControl position="bottom-right"/>
                     {streamlinesTiles &&
                         <Source key={streamlinesTiles} id="streamlines-raster" type="raster" tiles={[streamlinesTiles]}>
@@ -653,13 +654,15 @@ const App = () => {
 
                                             </div>}
                                     </FormGroup>
+                                    <FormGroup inline label={("Projection")}>
+                                        <RadioGroup selectedValue={projection} inline
+                                                    onChange={e => setProjection(e.currentTarget.value)}>
+                                            {["Globe", "Mercator"].map(proj =>
+                                                <Radio key={proj} value={proj.toLowerCase()} label={proj}/>)}
+                                        </RadioGroup>
+                                    </FormGroup>
                                     <Switch large checked={showTerrain} onChange={toggleShowTerrain}
                                             label={("Show 3-D terrain")}/>
-                                    <RadioGroup selectedValue={projection} inline label="Projection"
-                                                onChange={e => setProjection(e.currentTarget.value)}>
-                                        {["Globe", "Mercator"].map(proj =>
-                                            <Radio key={proj} large value={proj.toLowerCase()} label={proj}/>)}
-                                    </RadioGroup>
                                     <Switch large checked={projection !== "globe" ? autoZoom : false}
                                             disabled={projection === "globe"} onChange={handleChangeAutoZoom}
                                             label={("Autozoom")}/>

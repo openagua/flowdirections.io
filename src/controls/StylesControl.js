@@ -1,19 +1,21 @@
-import {Button} from "@mui/material";
+import {Button} from "@blueprintjs/core";
 import MapControl from "./MapControl";
 
-const StyleButton = ({mapStyle: style, onClick}) => {
-    const handleClick = () => onClick(style.id);
+const MapStyleButton = ({mapStyle, onClick}) => {
+    const handleClick = () => onClick(mapStyle.id);
     return (
-        <Button style={{width: "100%", padding: 5, display: "flex"}} onClick={handleClick}>{style.label}</Button>
+        <Button fill onClick={handleClick}>
+            <div>{mapStyle.label}</div>
+        </Button>
     )
 }
 
-const StylesControl = ({position, styles, onChange}) => {
+const StylesControl = ({position, mapStyles, onChange}) => {
     return (
         <MapControl position={position}>
-            <div>
-                {styles.map(style =>
-                    <StyleButton key={style.label} mapStyle={style} onClick={onChange}/>
+            <div style={{display: "flex"}}>
+                {mapStyles.map(mapStyle =>
+                    <MapStyleButton key={mapStyle.label} mapStyle={mapStyle} onClick={onChange}/>
                 )}
             </div>
         </MapControl>
