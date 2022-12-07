@@ -1,5 +1,5 @@
 import React from 'react';
-import {useState, cloneElement} from "react";
+import {cloneElement} from "react";
 import ReactDOM from "react-dom/client";
 import {createPortal} from "react-dom";
 import {useControl} from "react-map-gl";
