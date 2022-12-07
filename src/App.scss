@@ -1,0 +1,55 @@
+.app {
+  position: fixed;
+  width: 100%;
+  top: 0;
+  bottom: 0;
+}
+
+.mapboxgl-ctrl-geocoder input[type='text'] {
+  font-size: 15px;
+}
+
+.mapbox-control-styles button {
+  width: 100%;
+  padding: 5px;
+}
+
+div, span {
+  outline: none !important;
+}
+
+.download-area button {
+  margin-bottom: 5px;
+  margin-left: 5px;
+}
+
+.map-styles-control {
+  width: unset;
+  display: flex;
+  //background: rgba(255, 255, 255, 1);
+  border-radius: 7px;
+  padding: 5px;
+
+  button {
+    width: 75px;
+    text-align: center;
+    margin: 5px;
+    padding: 5px;
+    border-radius: 4px !important;
+    border-width: 3px !important;
+
+    outline: none !important;
+
+    &.selected {
+      border-color: #4C90F0 !important;
+    }
+
+    img {
+      width: 100%;
+    }
+  }
+}
+
+.map-styles-control-button {
+  text-align: center;
+}

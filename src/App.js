@@ -18,7 +18,7 @@ import {
     Tabs,
     Toaster,
     Spinner,
-    Colors
+    Colors,
 } from "@blueprintjs/core";
 
 import Map, {
@@ -41,13 +41,14 @@ import {OutletMarker, CatchmentSource, ExternalLink, Panel} from "./components";
 import 'normalize.css/normalize.css';
 import '@blueprintjs/icons/lib/css/blueprint-icons.css';
 import '@blueprintjs/core/lib/css/blueprint.css';
+import "@blueprintjs/popover2/lib/css/blueprint-popover2.css";
 
 import 'mapbox-gl/dist/mapbox-gl.css';
 // import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import 'handsontable/dist/handsontable.full.min.css';
 
-import './App.css';
+import './App.scss';
 import {DARK} from "@blueprintjs/core/lib/esnext/common/classes";
 
 const api = axios.create({
@@ -58,11 +59,11 @@ const api = axios.create({
 });
 
 const mapStyles = [{
-    id: 'streets',
+    id: 'mapbox-streets',
     label: 'Streets',
     url: 'mapbox://styles/mapbox/streets-v11',
 }, {
-    id: 'satellite',
+    id: 'mapbox-satellite',
     label: 'Satellite',
     url: 'mapbox://styles/mapbox/satellite-v9'
 }]
@@ -522,7 +523,8 @@ const App = () => {
                     {/*    controls={{point: true, trash: true}}*/}
                     {/*    onUpdate={setOutlets}*/}
                     {/*/>}*/}
-                    <StylesControl position="bottom-left" mapStyles={mapStyles} onChange={handleChangeMapStyle}/>
+                    <StylesControl position="bottom-left" mapStyles={mapStyles} onChange={handleChangeMapStyle}
+                                   initialSelected={mapStyle.id}/>
                     <ScaleControl position="bottom-right"/>
                     {streamlinesTiles &&
                         <Source key={streamlinesTiles} id="streamlines-raster" type="raster" tiles={[streamlinesTiles]}>
