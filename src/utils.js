@@ -128,3 +128,7 @@ export const rdp = (points, epsilonTolerance) => {
 
 export const round = (x, n) => Math.round(x * n) / n;
 
+export const snapToCenter = (n, res) => {
+    const r = res / 60 / 60;
+    return Math.floor(n / r) * r + r / 2;
+}

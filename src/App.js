@@ -2,7 +2,7 @@ import {useEffect, useRef, useState} from "react";
 import axios from "axios";
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
 
-import {round} from "./utils";
+import {round, snapToCenter} from "./utils";
 
 import {
     Button,
@@ -33,9 +33,7 @@ import FileSaver from 'file-saver';
 
 import SearchControl from "./controls/SearchControl";
 
-// import {rdp} from "./utils";
-
-import {OutletMarker, CatchmentSource, ExternalLink} from "./components";
+import {OutletMarker, CatchmentSource, ExternalLink, Panel} from "./components";
 
 // STYLES
 
@@ -56,10 +54,6 @@ const api = axios.create({
     withCredentials: false,
     // timeout: 1000,
     // headers: {'X-Custom-Header': 'foobar'}
-});
-
-const toast = Toaster.create({
-    position: "bottom-left"
 });
 
 const styles = [{
@@ -90,10 +84,34 @@ const createOutlet = (lon, lat, id) => {
     )
 }
 
-
 const resolutions = [15, 30];
 
-const Panel = ({children}) => <div style={{padding: 0}}>{children}</div>;
+
+class Toast {
+    constructor() {
+        this.toaster = Toaster.create({
+            position: "bottom-left"
+        });
+    }
+
+    success(message) {
+        this.toaster.show({message, intent: "success"})
+    }
+
+    danger(message) {
+        this.toaster.show({message, intent: "danger"})
+    }
+
+    warning(message) {
+        this.toaster.show({message, intent: "warning"})
+    }
+
+    primary(message) {
+        this.toaster.show({message, intent: "primary"})
+    }
+}
+
+const notify = new Toast();
 
 const App = () => {
     const map = useRef();
@@ -101,6 +119,7 @@ const App = () => {
     const originalCatchment = useRef();
 
     // const [menuOpen, setMenuOpen] = useState(false);
+    const [projection, setProjection] = useState("globe");
     const [dark, setDark] = useState(false);
     const [mapStyle] = useState(styles[0]);
     const [outlet, setOutlet] = useState(null);
@@ -110,8 +129,7 @@ const App = () => {
     const [catchments, setCatchments] = useState(null);
     const [catchment, setCatchment] = useState(null);
     const [working, setWorking] = useState(false);
-    // const [success, setSuccess] = useState(false);
-    // const [selectedTab, setSelectedTab] = useState("home");
+    const [snap] = useState(false);
     const [showTerrain, setShowTerrain] = useState(false);
     const [showStreamlines, setShowStreamlines] = useState(true);
     const [streamlinesThreshold, setStreamlinesThreshold] = useState(50);
@@ -163,6 +181,9 @@ const App = () => {
     }
 
     const flyTo = (data) => {
+        if (!autoZoom || projection === "globe") {
+            return;
+        }
         const bounds = new mapboxgl.LngLatBounds();
         data.features.forEach(feature => {
             feature.geometry.coordinates.forEach(coords => {
@@ -171,7 +192,7 @@ const App = () => {
                 })
             })
         })
-        map.current.fitBounds(bounds, {
+        map.current.fitBounds([bounds._sw, bounds._ne], {
             padding: 20
         });
     }
@@ -187,8 +208,12 @@ const App = () => {
     };
 
     const handleAddOutlet = ({lngLat}) => {
-        const {lng: lon, lat} = lngLat;
+        const {lng: _lon, lat: _lat} = lngLat;
         const id = outlets ? outlets.features.length + 1 : 1;
+
+        // =FLOOR(A5,B$2)+B$2/2
+        const lon = snap ? snapToCenter(_lon, resolution) : _lon;
+        const lat = snap ? snapToCenter(_lat, resolution) : _lat;
         const newOutlet = createOutlet(lon, lat, id);
         if (autoMode) {
             setOutlet(newOutlet);
@@ -203,34 +228,50 @@ const App = () => {
     }
 
     const handleMoveOutlet = (updated) => {
+        const [lon, lat] = updated.geometry.coordinates;
+        const movedOutlet = {
+            ...updated,
+            geometry: {
+                ...updated.geometry,
+                coordinates: [
+                    snap ? snapToCenter(lon, resolution) : lon,
+                    snap ? snapToCenter(lat, resolution) : lat,
+                ]
+            }
+        }
         if (autoMode) {
-            setOutlet(updated);
-            handleQuickDelineate(updated)
+            setOutlet(movedOutlet);
+            handleQuickDelineate(movedOutlet)
         } else {
             setOutlets({
                 ...outlets,
-                features: outlets.features.map(f => f.properties.id === updated.properties.id ? updated : f)
+                features: outlets.features.map(f => f.properties.id === movedOutlet.properties.id ? movedOutlet : f)
             });
         }
     }
 
     const handleQuickDelineate = (newOutlet) => {
+        const [lon, lat] = newOutlet.geometry.coordinates;
+        if (outlet) {
+            const [_lon, _lat] = outlet.geometry.coordinates;
+            if (_lon === lon && _lat === lat) {
+                return;
+            }
+        }
         setWorking(true);
         setCatchment(null);
-        const coords = newOutlet.geometry.coordinates;
-        api.get('catchment', {params: {lat: coords[1], lon: coords[0], res: resolution}})
+        api.get('catchment', {params: {lon, lat, res: resolution}})
             .then(({data}) => {
                 setCatchment(data);
                 originalCatchment.current = data;
                 setWorking(false);
-                // setSuccess(true);
-                toast.show({message: "Success!", intent: "success"});
+                notify.success("Success!")
 
                 autoZoom && flyTo(data);
             })
             .catch(() => {
                 setWorking(false);
-                toast.show({message: "Uh-oh! Something went wrong.", intent: "danger"})
+                notify.danger("Uh-oh! Something went wrong.")
             });
     }
 
@@ -241,7 +282,7 @@ const App = () => {
             setCatchments(data);
             originalCatchment.current = data;
             setWorking(false);
-            toast.show();
+            notify.success("Success!");
 
             autoZoom && flyTo(data);
         });
@@ -451,6 +492,7 @@ const App = () => {
             }}>
                 <Map
                     ref={map}
+                    key={projection}
                     initialViewState={initialViewState}
                     maxPitch={85}
                     onLoad={handleLoadMap}
@@ -467,7 +509,7 @@ const App = () => {
                     }}
                     mapStyle={mapStyle.styleUrl}
                     mapboxAccessToken={mapboxAccessToken}
-                    projection="globe"
+                    projection={projection}
                 >
                     <SearchControl accessToken={mapboxAccessToken} position="top-left"/>
                     <NavigationControl position="top-right"/>
@@ -613,7 +655,13 @@ const App = () => {
                                     </FormGroup>
                                     <Switch large checked={showTerrain} onChange={toggleShowTerrain}
                                             label={("Show 3-D terrain")}/>
-                                    <Switch large checked={autoZoom} onChange={handleChangeAutoZoom}
+                                    <RadioGroup selectedValue={projection} inline label="Projection"
+                                                onChange={e => setProjection(e.currentTarget.value)}>
+                                        {["Globe", "Mercator"].map(proj =>
+                                            <Radio key={proj} large value={proj.toLowerCase()} label={proj}/>)}
+                                    </RadioGroup>
+                                    <Switch large checked={projection !== "globe" ? autoZoom : false}
+                                            disabled={projection === "globe"} onChange={handleChangeAutoZoom}
                                             label={("Autozoom")}/>
                                 </Panel>
                             }/>
