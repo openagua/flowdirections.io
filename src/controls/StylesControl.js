@@ -15,7 +15,7 @@ const StylesControl = ({position, mapStyles, initialSelected, onChange}) => {
     }
 
     return (
-        <MapControl position={position}>
+        <MapControl position={position} component={
             <Popover2
                 ref={ref}
                 interactionKind="hover"
@@ -41,8 +41,7 @@ const StylesControl = ({position, mapStyles, initialSelected, onChange}) => {
                     <Icon size={20} icon="layers"/>
                 </Button>
             </Popover2>
-
-        </MapControl>
+        }/>
     )
 }
 

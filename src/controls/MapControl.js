@@ -1,28 +1,20 @@
 import React from 'react';
 import {cloneElement} from "react";
-import ReactDOM from "react-dom/client";
+// import ReactDOM from "react-dom/client";
 import {createPortal} from "react-dom";
 import {useControl} from "react-map-gl";
 
-class MapControlClass {
-
-    constructor(element) {
-        this._container = document.createElement('div');
-        this._container.className = 'mapboxgl-ctrl mapboxgl-ctrl-group';
-        const root = ReactDOM.createRoot(this._container);
-        root.render(element);
-        createPortal(element, this._container);
-    }
+class CustomControl {
 
     onAdd(map) {
+        this._map = map;
         this._container = document.createElement('div');
         this._container.className = 'mapboxgl-ctrl mapboxgl-ctrl-group';
-        this._map = map;
         return this._container;
     }
 
     onRemove() {
-        this._container.parentNode.removeChild(this._container);
+        this._container.remove();
         this._map = undefined;
     }
 
@@ -35,14 +27,14 @@ class MapControlClass {
     }
 }
 
-const MapControl = ({position, children, ...otherProps}) => {
+const MapControl = ({position, component}) => {
     const ctrl = useControl(() => {
-        return new MapControlClass();
+        return new CustomControl();
     }, {position});
 
     const map = ctrl.getMap();
 
-    return map && createPortal(cloneElement(children, otherProps), ctrl.getElement());
+    return map && createPortal(cloneElement(component, {map}), ctrl.getElement());
 }
 
 export default React.memo(MapControl);
