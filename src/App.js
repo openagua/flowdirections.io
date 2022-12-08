@@ -58,15 +58,33 @@ const api = axios.create({
     // headers: {'X-Custom-Header': 'foobar'}
 });
 
-const mapStyles = [{
-    id: 'mapbox-streets',
-    label: 'Streets',
-    url: 'mapbox://styles/mapbox/streets-v11',
-}, {
-    id: 'mapbox-satellite',
-    label: 'Satellite',
-    url: 'mapbox://styles/mapbox/satellite-v9'
-}]
+const mapStyles = [
+    {
+        id: 'mapbox-streets',
+        label: 'Streets',
+        url: 'mapbox://styles/mapbox/streets-v11',
+    }, {
+        id: 'mapbox-satellite',
+        label: 'Satellite',
+        url: 'mapbox://styles/mapbox/satellite-v9'
+    }, {
+        id: 'mapbox-satellite-streets',
+        label: 'Satellite Streets',
+        url: 'mapbox://styles/mapbox/satellite-streets-v12'
+    }, {
+        id: 'mapbox-outdoors',
+        label: 'Outdoors',
+        url: 'mapbox://styles/mapbox/outdoors-v12'
+    }, {
+        id: 'mapbox-light',
+        label: 'Light',
+        url: 'mapbox://styles/mapbox/light-v11'
+    }, {
+        id: 'mapbox-dark',
+        label: 'Dark',
+        url: 'mapbox://styles/mapbox/dark-v11'
+    }
+]
 
 const mapboxAccessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 

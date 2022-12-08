@@ -6,7 +6,6 @@ import {useRef, useState} from "react";
 const StylesControl = ({position, mapStyles, initialSelected, onChange}) => {
 
     const [selected, setSelected] = useState(initialSelected);
-    const ref = useRef();
 
     const handleClick = (e) => {
         const selectedId = e.currentTarget.id;
@@ -17,7 +16,6 @@ const StylesControl = ({position, mapStyles, initialSelected, onChange}) => {
     return (
         <MapControl position={position} component={
             <Popover2
-                ref={ref}
                 interactionKind="hover"
                 position="left-bottom"
                 content={
