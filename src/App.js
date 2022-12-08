@@ -450,8 +450,6 @@ const App = () => {
     //     setSelectedTab(value);
     // }
 
-    const sidebarWidth = 350;
-    const sidebarPadding = 0;
     const navbarHeight = 50;
 
     // const simplifyMax = 0.01;
@@ -474,16 +472,6 @@ const App = () => {
             <Navbar>
                 <NavbarGroup align="left">
                     <Navbar.Heading><a href="https://flowdirections.io">flowdirections.io</a></Navbar.Heading>
-                    {/*<Popover2 position="bottom-left" minimal content={*/}
-                    {/*    <Menu>*/}
-                    {/*        <MenuItem2 text={("Download outlets")}>*/}
-                    {/*            <MenuItem2 text={("GeoJSON")}/>*/}
-                    {/*            <MenuItem2 text={("Shapefile")}/>*/}
-                    {/*        </MenuItem2>*/}
-                    {/*    </Menu>*/}
-                    {/*}>*/}
-                    {/*    <Button intent="primary" minimal>{("File")}</Button>*/}
-                    {/*</Popover2>*/}
                     <Switch large label={"Lock editing"} style={{margin: 0, marginLeft: 10}} checked={locked}
                             onChange={handleChangeLocked}/>
                     <Button minimal icon={dark ? "flash" : "moon"} style={{marginLeft: 10}}
@@ -512,14 +500,6 @@ const App = () => {
                     onClick={locked ? null : handleAddOutlet}
                     onMoveEnd={handleMoveEnd}
                     onMoveStart={handleMoveStart}
-                    style={{
-                        position: 'absolute',
-                        height: "100%",
-                        left: 0,
-                        width: null,
-                        right: sidebarWidth,
-                        // background: dark ? "black" : "white"
-                    }}
                     mapStyle={mapStyle.url}
                     mapboxAccessToken={mapboxAccessToken}
                     projection={projection}
@@ -554,16 +534,7 @@ const App = () => {
                         <OutletMarker key={o.properties.id} outlet={o} draggable={!locked}
                                       onDragEnd={handleMoveOutlet}/>)}
                 </Map>
-                <div
-                    style={{
-                        position: 'absolute',
-                        height: "100%",
-                        right: 0,
-                        width: sidebarWidth - sidebarPadding * 2,
-                        padding: sidebarPadding,
-                        boxShadow: `0 0 2px 0px ${dark ? "white" : "black"}`,
-                    }}
-                >
+                <div className="map-sidebar">
                     <div style={{padding: 10}}>
                         <Tabs id="sidebar-tabs" large>
                             <Tab id="home" title="Home" panel={

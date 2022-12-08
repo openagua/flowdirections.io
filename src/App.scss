@@ -1,5 +1,8 @@
 @import "~@blueprintjs/core/lib/scss/variables";
 
+$sidebar-width: 350px;
+$sidebar-padding: 0;
+
 button {
   outline: none !important;
 }
@@ -9,6 +12,7 @@ button {
   width: 100%;
   top: 0;
   bottom: 0;
+
   &.bp4-dark {
     background: $dark-gray3;
   }
@@ -61,4 +65,25 @@ div, span {
 
 .map-styles-control-button {
   text-align: center;
+}
+
+.map-sidebar {
+  position: absolute;
+  height: 100%;
+  right: 0;
+  box-shadow: 0 0 2px 0 black;
+  overflow-y: auto;
+  width: $sidebar-width - $sidebar-padding * 2;
+  padding: $sidebar-padding;
+}
+
+.mapboxgl-map {
+  position: absolute !important;
+  height: 100% !important;
+  left: 0 !important;
+  right: $sidebar-width !important;
+
+  .bp4-dark & {
+    background: black;
+  }
 }
