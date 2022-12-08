@@ -1,7 +1,7 @@
 import {Button, Icon} from "@blueprintjs/core";
 import {Popover2} from "@blueprintjs/popover2";
 import MapControl from "./MapControl";
-import {useRef, useState} from "react";
+import {useState} from "react";
 
 const StylesControl = ({position, mapStyles, initialSelected, onChange}) => {
 
