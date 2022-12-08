@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from "react";
 import axios from "axios";
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
-
+import classNames from "classnames";
 import {round, snapToCenter} from "./utils";
 
 import {
@@ -457,14 +457,7 @@ const App = () => {
     // const simplifyMax = 0.01;
 
     return (
-        <div className={dark ? DARK : null} style={{
-            background: dark ? Colors.BLACK : Colors.WHITE,
-            position: "fixed",
-            left: 0,
-            right: 0,
-            top: 0,
-            bottom: 9
-        }}>
+        <div className={classNames("app", {[DARK] : dark})}>
             <div style={{
                 display: working ? "flex" : "none",
                 position: "fixed",
