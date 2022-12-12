@@ -1,9 +1,9 @@
 import {useEffect, useRef, useState} from "react";
 import axios from "axios";
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
-
+import classNames from "classnames";
 import {round, snapToCenter} from "./utils";
-
+import debounce from "debounce";
 import {
     Button,
     FormGroup,
@@ -18,9 +18,8 @@ import {
     Tabs,
     Toaster,
     Spinner,
-    Colors,
+    Icon,
 } from "@blueprintjs/core";
-
 import Map, {
     GeolocateControl,
     Source,
@@ -30,11 +29,12 @@ import Map, {
 } from 'react-map-gl';
 import {HotTable} from '@handsontable/react';
 import FileSaver from 'file-saver';
-
 import SearchControl from "./controls/SearchControl";
 import StylesControl from "./controls/StylesControl";
-
 import {OutletMarker, CatchmentSource, ExternalLink, Panel} from "./components";
+import MapControl from "./controls/MapControl";
+
+import shpwrite from './libraries/shp-write';
 
 // STYLES
 
@@ -58,15 +58,35 @@ const api = axios.create({
     // headers: {'X-Custom-Header': 'foobar'}
 });
 
-const mapStyles = [{
-    id: 'mapbox-streets',
-    label: 'Streets',
-    url: 'mapbox://styles/mapbox/streets-v11',
-}, {
-    id: 'mapbox-satellite',
-    label: 'Satellite',
-    url: 'mapbox://styles/mapbox/satellite-v9'
-}]
+const mapStyles = [
+    {
+        id: 'mapbox-streets',
+        label: 'Streets',
+        url: 'mapbox://styles/mapbox/streets-v11',
+    }, {
+        id: 'mapbox-satellite',
+        label: 'Satellite',
+        url: 'mapbox://styles/mapbox/satellite-v9'
+    }, {
+        id: 'mapbox-satellite-streets',
+        label: 'Satellite Streets',
+        url: 'mapbox://styles/mapbox/satellite-streets-v12'
+    }, {
+        id: 'mapbox-outdoors',
+        label: 'Outdoors',
+        url: 'mapbox://styles/mapbox/outdoors-v12'
+    }, {
+        id: 'mapbox-light',
+        label: 'Light',
+        url: 'mapbox://styles/mapbox/light-v11'
+    }, {
+        id: 'mapbox-dark',
+        label: 'Dark',
+        url: 'mapbox://styles/mapbox/dark-v11'
+    }
+]
+
+const FILETYPES = ['GeoJSON', 'Shapefile'];
 
 const mapboxAccessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 
@@ -76,7 +96,6 @@ const createOutlet = (lon, lat, id) => {
             "type": "Feature",
             "properties": {
                 "id": id,
-                "marker-symbol": "monument"
             },
             "geometry": {
                 "type": "Point",
@@ -119,15 +138,18 @@ const App = () => {
     const map = useRef();
     const cursor = useRef();
     const originalCatchment = useRef();
+    // const resizer = useRef();
 
-    // const [menuOpen, setMenuOpen] = useState(false);
-    const [projection, setProjection] = useState("globe");
+    const smallScreen = window.screen.availWidth < 700;
+
+    const [sidebarIsClosed, setSidebarIsClosed] = useState(smallScreen);
+    const [projection, setProjection] = useState("mercator");
     const [dark, setDark] = useState(false);
     const [mapStyle, setMapStyle] = useState(mapStyles[0]);
     const [outlet, setOutlet] = useState(null);
     const [resolution, setResolution] = useState(30);
     const [outlets, setOutlets] = useState();
-    const [autoMode, setAutoMode] = useState(true);
+    const [quickMode, setQuickMode] = useState(true);
     const [catchments, setCatchments] = useState(null);
     const [catchment, setCatchment] = useState(null);
     const [working, setWorking] = useState(false);
@@ -167,6 +189,23 @@ const App = () => {
         return _initialViewState;
     })
 
+    // useEffect(() => {
+    //     if (map.current) {
+    //         map.current.on('contextmenu', (e) => {
+    //             console.log('clicked!!!')
+    //         })
+    //     }
+    // }, [map.current])
+
+    useEffect(() => {
+        const resizer = new ResizeObserver(debounce(() => map.current && map.current.resize(), 0.5));
+        const mapDiv = document.getElementById('map');
+        resizer.observe(mapDiv);
+        return () => {
+            resizer.disconnect();
+        }
+    }, [])
+
     useEffect(() => {
         setStreamlinesTiles(null);
         if (showStreamlines) {
@@ -183,7 +222,7 @@ const App = () => {
     }
 
     const flyTo = (data) => {
-        if (!autoZoom || projection === "globe") {
+        if (projection === "globe" || !data) {
             return;
         }
         const bounds = new mapboxgl.LngLatBounds();
@@ -195,8 +234,12 @@ const App = () => {
             })
         })
         map.current.fitBounds([bounds._sw, bounds._ne], {
-            padding: 20
+            padding: 30
         });
+    }
+
+    const fitAll = () => {
+        flyTo(quickMode ? catchment : catchments);
     }
 
     const handleChangeLocked = () => {
@@ -217,7 +260,7 @@ const App = () => {
         const lon = snap ? snapToCenter(_lon, resolution) : _lon;
         const lat = snap ? snapToCenter(_lat, resolution) : _lat;
         const newOutlet = createOutlet(lon, lat, id);
-        if (autoMode) {
+        if (quickMode) {
             setOutlet(newOutlet);
             handleQuickDelineate(newOutlet);
         } else {
@@ -241,7 +284,7 @@ const App = () => {
                 ]
             }
         }
-        if (autoMode) {
+        if (quickMode) {
             setOutlet(movedOutlet);
             handleQuickDelineate(movedOutlet)
         } else {
@@ -250,6 +293,22 @@ const App = () => {
                 features: outlets.features.map(f => f.properties.id === movedOutlet.properties.id ? movedOutlet : f)
             });
         }
+    }
+
+    const handleDeleteOutlet = (index) => {
+        if (quickMode) {
+            setOutlet(null);
+            setCatchment(null);
+        } else {
+            setOutlets({
+                ...outlets,
+                features: outlets.features.filter((outlet, i) => i !== index)
+            });
+        }
+    }
+
+    const handleShowContextMenu = (outlet) => {
+        console.log('hi!!')
     }
 
     const handleQuickDelineate = (newOutlet) => {
@@ -408,17 +467,49 @@ const App = () => {
     }
 
     const changeMode = () => {
-        setAutoMode(!autoMode);
+        setQuickMode(!quickMode);
     }
 
-    const handleDownloadCatchments = () => {
-        const blob = new Blob([JSON.stringify(autoMode ? catchment : catchments, null, 2)], {type: "text/plain;charset=utf-8"});
-        FileSaver.saveAs(blob, "catchment.json");
-    }
-
-    const handleDownloadOutlets = () => {
-        const blob = new Blob([JSON.stringify(autoMode ? outlet : outlets, null, 2)], {type: "text/plain;charset=utf-8"});
-        FileSaver.saveAs(blob, `outlet${autoMode ? "" : "s"}.json`);
+    const handleDownload = (e) => {
+        const {objecttype, filetype} = e.currentTarget.dataset;
+        let shape;
+        switch (objecttype) {
+            case "outlet":
+                shape = quickMode ? outlet : outlets;
+                break;
+            case "catchment":
+                shape = quickMode ? catchment : catchments;
+                break;
+            default:
+                return;
+        }
+        const filenameBase = `${objecttype}${quickMode ? "" : "s"}`
+        switch (filetype) {
+            case "geojson":
+                const blob = new Blob([JSON.stringify(shape, null, 2)], {type: "text/plain;charset=utf-8"});
+                FileSaver.saveAs(blob, `${filenameBase}.json`);
+                break;
+            case "shapefile":
+                const data = shape.type === 'FeatureCollection' ? shape : {
+                    type: 'FeatureCollection',
+                    features: [shape]
+                };
+                const options = {
+                    folder: filenameBase,
+                    type: 'blob',
+                    types: {
+                        point: filenameBase,
+                        polygon: filenameBase,
+                        line: filenameBase
+                    }
+                }
+                shpwrite.zip(data, options).then(blob => {
+                    FileSaver.saveAs(blob, `${filenameBase}.zip`);
+                });
+                break;
+            default:
+                return;
+        }
     }
 
     const handleClearWorkspace = () => {
@@ -432,47 +523,17 @@ const App = () => {
     //     setSelectedTab(value);
     // }
 
-    const sidebarWidth = 350;
-    const sidebarPadding = 0;
-    const navbarHeight = 50;
-
     // const simplifyMax = 0.01;
 
     return (
-        <div className={dark ? DARK : null} style={{
-            background: dark ? Colors.BLACK : Colors.WHITE,
-            position: "fixed",
-            left: 0,
-            right: 0,
-            top: 0,
-            bottom: 9
-        }}>
-            <div style={{
-                display: working ? "flex" : "none",
-                position: "fixed",
-                top: 0,
-                bottom: 0,
-                left: 0,
-                right: 0,
-                zIndex: 100,
-                background: "rgba(0,0,0,0.5)"
-            }}>
-                <Spinner size={100} intent="none"
-                         style={{margin: "auto", padding: 25, borderRadius: 10, background: "rgba(0,0,0,0.5)"}}/>
+        <div className={classNames("app", {[DARK]: dark}, sidebarIsClosed ? "sidebar-closed" : "")}>
+            <div className="spinner-wrapper" style={{display: working ? "flex" : "none"}}>
+                <Spinner size={100} intent="none" className="spinner"/>
             </div>
             <Navbar>
                 <NavbarGroup align="left">
-                    <Navbar.Heading><a href="https://flowdirections.io">flowdirections.io</a></Navbar.Heading>
-                    {/*<Popover2 position="bottom-left" minimal content={*/}
-                    {/*    <Menu>*/}
-                    {/*        <MenuItem2 text={("Download outlets")}>*/}
-                    {/*            <MenuItem2 text={("GeoJSON")}/>*/}
-                    {/*            <MenuItem2 text={("Shapefile")}/>*/}
-                    {/*        </MenuItem2>*/}
-                    {/*    </Menu>*/}
-                    {/*}>*/}
-                    {/*    <Button intent="primary" minimal>{("File")}</Button>*/}
-                    {/*</Popover2>*/}
+                    {smallScreen ? null :
+                        <Navbar.Heading><a href={document.location.host}>{document.location.host}</a></Navbar.Heading>}
                     <Switch large label={"Lock editing"} style={{margin: 0, marginLeft: 10}} checked={locked}
                             onChange={handleChangeLocked}/>
                     <Button minimal icon={dark ? "flash" : "moon"} style={{marginLeft: 10}}
@@ -485,245 +546,236 @@ const App = () => {
                     {/*   target="_blank" style={{display: "flex"}}><GitHubIcon/></a>*/}
                 </NavbarGroup>
             </Navbar>
-            <div style={{
-                position: "fixed",
-                top: navbarHeight,
-                bottom: 0,
-                left: 0,
-                right: 0,
-            }}>
-                <Map
-                    ref={map}
-                    key={projection}
-                    initialViewState={initialViewState}
-                    maxPitch={85}
-                    onLoad={handleLoadMap}
-                    onClick={locked ? null : handleAddOutlet}
-                    onMoveEnd={handleMoveEnd}
-                    onMoveStart={handleMoveStart}
-                    style={{
-                        position: 'absolute',
-                        height: "100%",
-                        left: 0,
-                        width: null,
-                        right: sidebarWidth,
-                        // background: dark ? "black" : "white"
-                    }}
-                    mapStyle={mapStyle.url}
-                    mapboxAccessToken={mapboxAccessToken}
-                    projection={projection}
-                >
-                    <SearchControl accessToken={mapboxAccessToken} position="top-left"/>
-                    <NavigationControl position="top-right"/>
-                    {/*<FitAllControl position="top-right"/>*/}
-                    <GeolocateControl/>
-                    {/*{autoMode && <DrawControl*/}
-                    {/*    position="top-left"*/}
-                    {/*    displayControlsDefault={false}*/}
-                    {/*    controls={{point: true, trash: true}}*/}
-                    {/*    onUpdate={setOutlets}*/}
-                    {/*/>}*/}
-                    <StylesControl position="bottom-left" mapStyles={mapStyles} onChange={handleChangeMapStyle}
-                                   initialSelected={mapStyle.id}/>
-                    <ScaleControl position="bottom-right"/>
-                    {streamlinesTiles &&
-                        <Source key={streamlinesTiles} id="streamlines-raster" type="raster" tiles={[streamlinesTiles]}>
-                            <Layer
-                                source="streamlines-raster"
-                                type="raster"
-                                paint={{
-                                    "raster-opacity": streamlinesOpacity / 100
-                                }}
-                            />
-                        </Source>}
-                    <CatchmentSource data={autoMode ? catchment : catchments}/>
-                    {autoMode && outlet &&
-                        <OutletMarker outlet={outlet} draggable={!locked} onDragEnd={handleMoveOutlet}/>}
-                    {!autoMode && outlets && outlets.features.map(o =>
-                        <OutletMarker key={o.properties.id} outlet={o} draggable={!locked}
-                                      onDragEnd={handleMoveOutlet}/>)}
-                </Map>
-                <div
-                    style={{
-                        position: 'absolute',
-                        height: "100%",
-                        right: 0,
-                        width: sidebarWidth - sidebarPadding * 2,
-                        padding: sidebarPadding,
-                        boxShadow: `0 0 2px 0px ${dark ? "white" : "black"}`,
-                    }}
-                >
-                    <div style={{padding: 10}}>
-                        <Tabs id="sidebar-tabs" large>
-                            <Tab id="home" title="Home" panel={
-                                <Panel>
-                                    <Button fill large icon="eraser" onClick={handleClearWorkspace}>
-                                        {("Clear workspace")}</Button>
-                                    <br/>
-                                    <FormGroup
-                                        helperText={("Auto mode will delineate a catchment as soon as you left-click a map.")}>
-                                        <Switch large checked={autoMode} onChange={changeMode} label={("Auto mode")}/>
-                                    </FormGroup>
-                                    {!autoMode && <div>
-                                        <div>
-                                            {outlets && outlets.features.length ?
-                                                <HotTable
-                                                    data={outlets.features.map(o => {
-                                                        const coords = o.geometry.coordinates;
-                                                        return ([coords[0], coords[1]])
-                                                    })}
-                                                    rowHeaders={true}
-                                                    colHeaders={["Lon", "Lat"]}
-                                                    height="auto"
-                                                    licenseKey="non-commercial-and-evaluation" // for non-commercial use only
-                                                /> : <div>
-                                                    Add outlets by left-clicking on the map.
-                                                </div>}
-                                        </div>
-                                        {outlets && <div style={{marginTop: 10, marginBottom: 10}}>
-                                            <Button intent="primary" onClick={handleDelineateMany}>{("Submit")}</Button>
-                                        </div>}
-                                    </div>}
-                                    <div className="bottom">
-                                        {(catchment || catchments) &&
-                                            <div>
-
-                                                {/*<FormLabel>Simplify</FormLabel>*/}
-                                                {/*<Slider defaultValue={0} step={simplifyMax/10} min={0} max={simplifyMax}*/}
-                                                {/*        onChange={handleChangeSimplification}/>*/}
-
-                                                {/*<Button variant="contained">Shapefile</Button>*/}
-                                                <div className="download-area">
-                                                    {((autoMode && outlet) || outlets) &&
-                                                        <div>
-                                                            <H5>{autoMode ? ("Download outlet") : ("Download outlet(s)")}</H5>
-                                                            <div>
-                                                                <Button small
-                                                                        onClick={handleDownloadOutlets}>GeoJSON</Button>
-                                                                {/*<Button small*/}
-                                                                {/*        onClick={handleDownloadOutlets}>Shapefile</Button>*/}
-                                                            </div>
-                                                        </div>
-                                                    }
-                                                    {((autoMode && catchment) || catchments) &&
-                                                        <div>
-                                                            <H5>{autoMode ? ("Download catchment") : ("Download catchment(s)")}</H5>
-                                                            <div>
-                                                                <Button small
-                                                                        onClick={handleDownloadCatchments}>GeoJSON</Button>
-                                                                {/*<Button small*/}
-                                                                {/*        onClick={handleDownloadCatchments}>Shapefile</Button>*/}
-                                                            </div>
-                                                        </div>
-                                                    }
-                                                </div>
+            <div className="main">
+                <div id="map" className="map">
+                    <Map
+                        ref={map}
+                        key={projection}
+                        initialViewState={initialViewState}
+                        maxPitch={85}
+                        onLoad={handleLoadMap}
+                        onClick={locked ? null : handleAddOutlet}
+                        onMoveEnd={handleMoveEnd}
+                        onMoveStart={handleMoveStart}
+                        mapStyle={mapStyle.url}
+                        mapboxAccessToken={mapboxAccessToken}
+                        projection={projection}
+                    >
+                        <SearchControl accessToken={mapboxAccessToken} position="top-left"/>
+                        <MapControl position="top-right" component={
+                            <button onClick={() => setSidebarIsClosed(!sidebarIsClosed)}><Icon icon="menu"/>
+                            </button>
+                        }/>
+                        <NavigationControl position="top-right"/>
+                        <GeolocateControl position="top-right"/>
+                        <MapControl position="top-right" component={
+                            <button disabled={projection === 'globe' || (quickMode ? !catchment : !catchments)}
+                                    onClick={fitAll}><Icon icon="clip"/></button>
+                        }/>
+                        {/*{quickMode && <DrawControl*/}
+                        {/*    position="top-left"*/}
+                        {/*    displayControlsDefault={false}*/}
+                        {/*    controls={{point: true, trash: true}}*/}
+                        {/*    onUpdate={setOutlets}*/}
+                        {/*/>}*/}
+                        <StylesControl position="bottom-left" mapStyles={mapStyles} onChange={handleChangeMapStyle}
+                                       initialSelected={mapStyle.id}/>
+                        <ScaleControl position="bottom-right"/>
+                        {streamlinesTiles &&
+                            <Source key={streamlinesTiles} id="streamlines-raster" type="raster"
+                                    tiles={[streamlinesTiles]}>
+                                <Layer
+                                    source="streamlines-raster"
+                                    type="raster"
+                                    paint={{"raster-opacity": streamlinesOpacity / 100}}
+                                />
+                            </Source>}
+                        <CatchmentSource data={quickMode ? catchment : catchments}/>
+                        {quickMode && outlet &&
+                            <OutletMarker id="outlet" outlet={outlet} draggable={!locked}
+                                          onContextMenu={handleShowContextMenu}
+                                          onDragEnd={handleMoveOutlet} onDelete={handleDeleteOutlet}/>}
+                        {!quickMode && outlets && outlets.features.map((o, i) =>
+                            <OutletMarker id="outlet" key={o.properties.id} outlet={o} draggable={!locked}
+                                          index={i} onContextMenu={handleShowContextMenu} onDelete={handleDeleteOutlet}
+                                          onDragEnd={handleMoveOutlet}/>)}
+                    </Map>
+                </div>
+                <div className="map-sidebar">
+                    <Tabs id="sidebar-tabs" large>
+                        <Tab id="home" title="Home" panel={
+                            <Panel>
+                                <Button fill large icon="eraser" onClick={handleClearWorkspace}>
+                                    {("Clear workspace")}</Button>
+                                <br/>
+                                <FormGroup
+                                    helperText={("Quick mode will delineate a single catchment as soon as you click on the map.")}>
+                                    <Switch large checked={quickMode} onChange={changeMode} label={("Quick mode")}/>
+                                </FormGroup>
+                                {!quickMode && <div>
+                                    <div>
+                                        {outlets && outlets.features.length ?
+                                            <HotTable
+                                                data={outlets.features.map(o => {
+                                                    const coords = o.geometry.coordinates;
+                                                    return ([coords[0], coords[1]])
+                                                })}
+                                                rowHeaders={true}
+                                                colHeaders={["Lon", "Lat"]}
+                                                height="auto"
+                                                licenseKey="non-commercial-and-evaluation" // for non-commercial use only
+                                            /> : <div>
+                                                Add multiple outlets by clicking on the map.
                                             </div>}
                                     </div>
+                                    {outlets && <div style={{marginTop: 10, marginBottom: 10}}>
+                                        <Button intent="primary" onClick={handleDelineateMany}>{("Delineate")}</Button>
+                                    </div>}
+                                </div>}
+                                <div className="bottom">
+                                    {(catchment || catchments) &&
+                                        <div>
 
-                                </Panel>
-                            }/>
-                            <Tab id="settings" title={("Settings")} panel={
-                                <Panel>
-                                    <RadioGroup label={("Resolution (arc seconds)")} large inline
-                                                selectedValue={resolution} onChange={handleChangeResolution}>
-                                        {resolutions.map(res => <Radio key={res} label={`${res}"`} value={res}/>)}
+                                            {/*<FormLabel>Simplify</FormLabel>*/}
+                                            {/*<Slider defaultValue={0} step={simplifyMax/10} min={0} max={simplifyMax}*/}
+                                            {/*        onChange={handleChangeSimplification}/>*/}
+
+                                            {/*<Button variant="contained">Shapefile</Button>*/}
+                                            <div className="download-area">
+                                                {((quickMode && outlet) || outlets) &&
+                                                    <div>
+                                                        <H5>{quickMode ? ("Download outlet") : ("Download outlet(s)")}</H5>
+                                                        <div>
+                                                            {FILETYPES.map(filetype => (
+                                                                <Button key={filetype}
+                                                                        data-filetype={filetype.toLowerCase()}
+                                                                        data-objecttype="outlet" small
+                                                                        onClick={handleDownload}>{filetype}</Button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                }
+                                                {((quickMode && catchment) || catchments) &&
+                                                    <div>
+                                                        <H5>{quickMode ? ("Download catchment") : ("Download catchment(s)")}</H5>
+                                                        <div>
+                                                            {FILETYPES.map(filetype => (
+                                                                <Button key={filetype}
+                                                                        data-filetype={filetype.toLowerCase()}
+                                                                        data-objecttype="catchment" small
+                                                                        onClick={handleDownload}>{filetype}</Button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>}
+                                </div>
+
+                            </Panel>
+                        }/>
+                        <Tab id="settings" title={("Settings")} panel={
+                            <Panel>
+                                <RadioGroup label={("Resolution (arc seconds)")} large inline
+                                            selectedValue={resolution} onChange={handleChangeResolution}>
+                                    {resolutions.map(res => <Radio key={res} label={`${res}"`} value={res}/>)}
+                                </RadioGroup>
+
+                                <FormGroup
+                                    label={<Switch large checked={showStreamlines} onChange={toggleStreamlines}
+                                                   label={("Show streamlines")}/>}>
+
+                                    {showStreamlines &&
+                                        <div style={{paddingLeft: 5, paddingRight: 10}}>
+                                            <FormGroup label={("Streamline density")}>
+                                                <Slider value={tempStreamlinesThreshold || streamlinesThreshold}
+                                                        min={0}
+                                                        max={100}
+                                                        stepSize={5}
+                                                        labelStepSize={25}
+                                                        onChange={handleChangeTempThreshold}
+                                                        onRelease={handleChangeThreshold}/>
+                                            </FormGroup>
+                                            <FormGroup label={("Streamline opacity")}>
+                                                <Slider value={streamlinesOpacity}
+                                                        min={0}
+                                                        max={100}
+                                                        stepSize={5}
+                                                        labelStepSize={25}
+                                                        onChange={handleChangeOpacity}/>
+                                            </FormGroup>
+
+
+                                        </div>}
+                                </FormGroup>
+                                <FormGroup inline label={("Projection")}>
+                                    <RadioGroup selectedValue={projection} inline
+                                                onChange={e => setProjection(e.currentTarget.value)}>
+                                        {["Mercator", "Globe"].map(proj =>
+                                            <Radio key={proj} value={proj.toLowerCase()} label={proj}/>)}
                                     </RadioGroup>
-
-                                    <FormGroup
-                                        label={<Switch large checked={showStreamlines} onChange={toggleStreamlines}
-                                                       label={("Show streamlines")}/>}>
-
-                                        {showStreamlines &&
-                                            <div>
-                                                <FormGroup label={("Streamline density")}>
-                                                    <Slider value={tempStreamlinesThreshold || streamlinesThreshold}
-                                                            min={0}
-                                                            max={100}
-                                                            stepSize={5}
-                                                            labelStepSize={25}
-                                                            onChange={handleChangeTempThreshold}
-                                                            onRelease={handleChangeThreshold}/>
-                                                </FormGroup>
-                                                <FormGroup label={("Streamline opacity")}>
-                                                    <Slider value={streamlinesOpacity}
-                                                            min={0}
-                                                            max={100}
-                                                            stepSize={5}
-                                                            labelStepSize={25}
-                                                            onChange={handleChangeOpacity}/>
-                                                </FormGroup>
-
-
-                                            </div>}
-                                    </FormGroup>
-                                    <FormGroup inline label={("Projection")}>
-                                        <RadioGroup selectedValue={projection} inline
-                                                    onChange={e => setProjection(e.currentTarget.value)}>
-                                            {["Globe", "Mercator"].map(proj =>
-                                                <Radio key={proj} value={proj.toLowerCase()} label={proj}/>)}
-                                        </RadioGroup>
-                                    </FormGroup>
-                                    <Switch large checked={showTerrain} onChange={toggleShowTerrain}
-                                            label={("Show 3-D terrain")}/>
-                                    <Switch large checked={projection !== "globe" ? autoZoom : false}
-                                            disabled={projection === "globe"} onChange={handleChangeAutoZoom}
-                                            label={("Autozoom")}/>
-                                </Panel>
-                            }/>
-                            <Tab id="about" title={("About")} panel={
-                                <Panel>
-                                    <p>
-                                        This app is based on <ExternalLink href="https://mattbartos.com/pysheds/">pysheds
-                                    </ExternalLink>, with <ExternalLink
-                                        href="https://www.hydrosheds.org">HydroSHEDS</ExternalLink> for the source
-                                        grid data, and&nbsp;
-                                        <ExternalLink href="https://www.mapbox.com">Mapbox</ExternalLink> for the
-                                        mapping environment. <ExternalLink
-                                        href="https://www.github.com/openagua/flowdirections.io#readme">Read
-                                        more here</ExternalLink>. The app is also inspired by <ExternalLink
-                                        href="https://geojson.io/">geojson.io</ExternalLink>, which you may find
-                                        useful.
-                                    </p>
-                                    <p>
-                                        "flowdirections" refers to a flow direction grid, a key intermediary in the
-                                        catchment delineation process and other DEM-derived analyses. It also
-                                        invokes mapping water and its movement ("hydrography" doesn't roll off the
-                                        tongue as smoothly).
-                                    </p>
-                                    <h4>Other similar/related tools</h4>
-                                    <ul>
-                                        <li><ExternalLink href="https://river-runner-global.samlearner.com/">River
-                                            Runner</ExternalLink>: "Tap to drop a raindrop anywhere in the world and
-                                            watch where it ends up"
-                                        </li>
-                                        <li><ExternalLink href="https://streamstats.usgs.gov/ss/">USGS
-                                            StreamStats</ExternalLink>: U.S.-only stream info, including delineation
-                                        </li>
-                                    </ul>
-                                    <h4>Feedback</h4>
-                                    <p>
-                                        Would you like to submit a bug or have a suggestion for improvement? Please
-                                        open an issue in the site's <ExternalLink
-                                        href="https://github.com/openagua/flowdirections.io/issues">issue
-                                        tracker</ExternalLink>!
-                                    </p>
-                                    <h4>Privacy</h4>
-                                    <p>None of your data is stored with flowdirections.io. The backend server only
-                                        performs
-                                        calculations (<ExternalLink
-                                            href="https://www.github.com/openagua/flowdirections-api">source
-                                            code</ExternalLink>), while the app that you are
-                                        currently using does not use cookies, and only stores data on your computer,
-                                        during your session
-                                        (<ExternalLink
-                                            href="https://www.github.com/openagua/flowdirections.io">source
-                                            code</ExternalLink>). This
-                                        may change in the future, in which case you will know about it.</p>
-                                </Panel>
-                            }/>
-                        </Tabs>
-
-                    </div>
+                                </FormGroup>
+                                <Switch large checked={showTerrain} onChange={toggleShowTerrain}
+                                        label={("Show 3-D terrain")}/>
+                                <Switch large checked={projection !== "globe" ? autoZoom : false}
+                                        disabled={projection === "globe"} onChange={handleChangeAutoZoom}
+                                        label={("Autozoom")}/>
+                            </Panel>
+                        }/>
+                        <Tab id="about" title={("About")} panel={
+                            <Panel>
+                                <p>
+                                    This app is based on <ExternalLink href="https://mattbartos.com/pysheds/">pysheds
+                                </ExternalLink>, with <ExternalLink
+                                    href="https://www.hydrosheds.org">HydroSHEDS</ExternalLink> for the source
+                                    grid data, and&nbsp;
+                                    <ExternalLink href="https://www.mapbox.com">Mapbox</ExternalLink> for the
+                                    mapping environment. <ExternalLink
+                                    href="https://www.github.com/openagua/flowdirections.io#readme">Read
+                                    more here</ExternalLink>. The app is also inspired by <ExternalLink
+                                    href="https://geojson.io/">geojson.io</ExternalLink>, which you may find
+                                    useful.
+                                </p>
+                                <p>
+                                    "flowdirections" refers to a flow direction grid, a key intermediary in the
+                                    catchment delineation process and other DEM-derived analyses. It also
+                                    invokes mapping water and its movement ("hydrography" doesn't roll off the
+                                    tongue as smoothly).
+                                </p>
+                                <h4>Other similar/related tools</h4>
+                                <ul>
+                                    <li><ExternalLink href="https://river-runner-global.samlearner.com/">River
+                                        Runner</ExternalLink>: "Tap to drop a raindrop anywhere in the world and
+                                        watch where it ends up"
+                                    </li>
+                                    <li><ExternalLink href="https://streamstats.usgs.gov/ss/">USGS
+                                        StreamStats</ExternalLink>: U.S.-only stream info, including delineation
+                                    </li>
+                                </ul>
+                                <h4>Feedback</h4>
+                                <p>
+                                    Would you like to submit a bug or have a suggestion for improvement? Please
+                                    open an issue in the site's <ExternalLink
+                                    href="https://github.com/openagua/flowdirections.io/issues">issue
+                                    tracker</ExternalLink>!
+                                </p>
+                                <h4>Privacy</h4>
+                                <p>None of your data is stored with flowdirections.io. The backend server only
+                                    performs
+                                    calculations (<ExternalLink
+                                        href="https://www.github.com/openagua/flowdirections-api">source
+                                        code</ExternalLink>), while the app that you are
+                                    currently using does not use cookies, and only stores data on your computer,
+                                    during your session
+                                    (<ExternalLink
+                                        href="https://www.github.com/openagua/flowdirections.io">source
+                                        code</ExternalLink>). This
+                                    may change in the future, in which case you will know about it.</p>
+                            </Panel>
+                        }/>
+                        <Tabs.Expander/>
+                        <Button small minimal onClick={() => setSidebarIsClosed(true)} icon="cross"/>
+                    </Tabs>
                 </div>
             </div>
         </div>

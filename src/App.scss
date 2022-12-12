@@ -1,8 +1,29 @@
+@import "~@blueprintjs/core/lib/scss/variables";
+
+$navbar-height: 50px;
+$sidebar-width: 350px;
+$sidebar-padding: 15px;
+$sidebar-transition-duration: 0.5s;
+
+button {
+  outline: none !important;
+}
+
 .app {
   position: fixed;
   width: 100%;
   top: 0;
   bottom: 0;
+
+  &.bp4-dark {
+    background: $dark-gray3;
+  }
+}
+
+.mapboxgl-ctrl-group button {
+  .bp4-dark & {
+    background: $dark-gray5;
+  }
 }
 
 .mapboxgl-ctrl-geocoder input[type='text'] {
@@ -36,7 +57,8 @@ div, span {
     margin: 5px;
     padding: 5px;
     border-radius: 4px !important;
-    border-width: 3px !important;
+    border-width: 2px !important;
+    border-color: rgba(0, 0, 0, 0) !important;
 
     outline: none !important;
 
@@ -52,4 +74,66 @@ div, span {
 
 .map-styles-control-button {
   text-align: center;
+  border-radius: 4px !important;
+}
+
+.map-sidebar {
+  position: absolute;
+  height: 100%;
+  right: 0;
+  box-shadow: 0 0 2px 0 black;
+  overflow-y: auto;
+  width: $sidebar-width;
+  padding: 0 $sidebar-padding;
+
+  .sidebar-closed & {
+    right: -$sidebar-width;
+  }
+  transition: right $sidebar-transition-duration;
+}
+
+.main {
+  position: fixed;
+  top: $navbar-height;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.map {
+  position: absolute;
+  height: 100%;
+  left: 0;
+  right: $sidebar-width;
+
+  .sidebar-closed & {
+    right: 0;
+  }
+
+  transition: right $sidebar-transition-duration;
+
+  .bp4-dark & {
+    background: black;
+  }
+}
+
+.bp4-tab-list {
+  align-items: center;
+}
+
+.spinner-wrapper {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.5);
+
+  .spinner {
+    margin: auto;
+    padding: 25px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.5);
+  }
 }

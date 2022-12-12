@@ -1,12 +1,11 @@
 import {Button, Icon} from "@blueprintjs/core";
 import {Popover2} from "@blueprintjs/popover2";
 import MapControl from "./MapControl";
-import {useRef, useState} from "react";
+import {useState} from "react";
 
 const StylesControl = ({position, mapStyles, initialSelected, onChange}) => {
 
     const [selected, setSelected] = useState(initialSelected);
-    const ref = useRef();
 
     const handleClick = (e) => {
         const selectedId = e.currentTarget.id;
@@ -17,7 +16,6 @@ const StylesControl = ({position, mapStyles, initialSelected, onChange}) => {
     return (
         <MapControl position={position} component={
             <Popover2
-                ref={ref}
                 interactionKind="hover"
                 position="left-bottom"
                 content={
@@ -37,9 +35,9 @@ const StylesControl = ({position, mapStyles, initialSelected, onChange}) => {
                         )}
                     </div>
                 }>
-                <Button large minimal className="map-styles-control-button">
+                <button className="map-styles-control-button">
                     <Icon size={20} icon="layers"/>
-                </Button>
+                </button>
             </Popover2>
         }/>
     )

@@ -35,7 +35,7 @@ const MapControl = ({position, component}) => {
 
     const map = ctrl.getMap();
 
-    return map && createPortal(cloneElement(component, {map}), ctrl.getElement());
+    return map && createPortal(cloneElement(component), ctrl.getElement());
 }
 
 export default React.memo(MapControl);
