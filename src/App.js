@@ -150,7 +150,7 @@ const App = () => {
     const [outlet, setOutlet] = useState(null);
     const [resolution, setResolution] = useState(30);
     const [outlets, setOutlets] = useState();
-    const [autoMode, setAutoMode] = useState(true);
+    const [quickMode, setQuickMode] = useState(true);
     const [catchments, setCatchments] = useState(null);
     const [catchment, setCatchment] = useState(null);
     const [working, setWorking] = useState(false);
@@ -215,7 +215,7 @@ const App = () => {
     }
 
     const flyTo = (data) => {
-        if (!autoZoom || projection === "globe") {
+        if (projection === "globe" || !data) {
             return;
         }
         const bounds = new mapboxgl.LngLatBounds();
@@ -227,8 +227,12 @@ const App = () => {
             })
         })
         map.current.fitBounds([bounds._sw, bounds._ne], {
-            padding: 20
+            padding: 30
         });
+    }
+
+    const fitAll = () => {
+        flyTo(quickMode ? catchment : catchments);
     }
 
     const handleChangeLocked = () => {
@@ -249,7 +253,7 @@ const App = () => {
         const lon = snap ? snapToCenter(_lon, resolution) : _lon;
         const lat = snap ? snapToCenter(_lat, resolution) : _lat;
         const newOutlet = createOutlet(lon, lat, id);
-        if (autoMode) {
+        if (quickMode) {
             setOutlet(newOutlet);
             handleQuickDelineate(newOutlet);
         } else {
@@ -273,7 +277,7 @@ const App = () => {
                 ]
             }
         }
-        if (autoMode) {
+        if (quickMode) {
             setOutlet(movedOutlet);
             handleQuickDelineate(movedOutlet)
         } else {
@@ -440,7 +444,7 @@ const App = () => {
     }
 
     const changeMode = () => {
-        setAutoMode(!autoMode);
+        setQuickMode(!quickMode);
     }
 
     const handleDownload = (e) => {
@@ -448,15 +452,15 @@ const App = () => {
         let shape;
         switch (objecttype) {
             case "outlet":
-                shape = autoMode ? outlet : outlets;
+                shape = quickMode ? outlet : outlets;
                 break;
             case "catchment":
-                shape = autoMode ? catchment : catchments;
+                shape = quickMode ? catchment : catchments;
                 break;
             default:
                 return;
         }
-        const filenameBase = `${objecttype}${autoMode ? "" : "s"}`
+        const filenameBase = `${objecttype}${quickMode ? "" : "s"}`
         switch (filetype) {
             case "geojson":
                 const blob = new Blob([JSON.stringify(shape, null, 2)], {type: "text/plain;charset=utf-8"});
@@ -540,9 +544,12 @@ const App = () => {
                             </button>
                         }/>
                         <NavigationControl position="top-right"/>
-                        {/*<FitAllControl position="top-right"/>*/}
-                        <GeolocateControl/>
-                        {/*{autoMode && <DrawControl*/}
+                        <GeolocateControl position="top-right"/>
+                        <MapControl position="top-right" component={
+                            <button disabled={projection === 'globe' || (quickMode ? !catchment : !catchments)}
+                                    onClick={fitAll}><Icon icon="home"/></button>
+                        }/>
+                        {/*{quickMode && <DrawControl*/}
                         {/*    position="top-left"*/}
                         {/*    displayControlsDefault={false}*/}
                         {/*    controls={{point: true, trash: true}}*/}
@@ -562,10 +569,10 @@ const App = () => {
                                     }}
                                 />
                             </Source>}
-                        <CatchmentSource data={autoMode ? catchment : catchments}/>
-                        {autoMode && outlet &&
+                        <CatchmentSource data={quickMode ? catchment : catchments}/>
+                        {quickMode && outlet &&
                             <OutletMarker outlet={outlet} draggable={!locked} onDragEnd={handleMoveOutlet}/>}
-                        {!autoMode && outlets && outlets.features.map(o =>
+                        {!quickMode && outlets && outlets.features.map(o =>
                             <OutletMarker key={o.properties.id} outlet={o} draggable={!locked}
                                           onDragEnd={handleMoveOutlet}/>)}
                     </Map>
@@ -579,9 +586,9 @@ const App = () => {
                                 <br/>
                                 <FormGroup
                                     helperText={("Quick mode will delineate a single catchment as soon as you click on the map.")}>
-                                    <Switch large checked={autoMode} onChange={changeMode} label={("Quick mode")}/>
+                                    <Switch large checked={quickMode} onChange={changeMode} label={("Quick mode")}/>
                                 </FormGroup>
-                                {!autoMode && <div>
+                                {!quickMode && <div>
                                     <div>
                                         {outlets && outlets.features.length ?
                                             <HotTable
@@ -598,7 +605,7 @@ const App = () => {
                                             </div>}
                                     </div>
                                     {outlets && <div style={{marginTop: 10, marginBottom: 10}}>
-                                        <Button intent="primary" onClick={handleDelineateMany}>{("Submit")}</Button>
+                                        <Button intent="primary" onClick={handleDelineateMany}>{("Delineate")}</Button>
                                     </div>}
                                 </div>}
                                 <div className="bottom">
@@ -611,9 +618,9 @@ const App = () => {
 
                                             {/*<Button variant="contained">Shapefile</Button>*/}
                                             <div className="download-area">
-                                                {((autoMode && outlet) || outlets) &&
+                                                {((quickMode && outlet) || outlets) &&
                                                     <div>
-                                                        <H5>{autoMode ? ("Download outlet") : ("Download outlet(s)")}</H5>
+                                                        <H5>{quickMode ? ("Download outlet") : ("Download outlet(s)")}</H5>
                                                         <div>
                                                             {FILETYPES.map(filetype => (
                                                                 <Button key={filetype}
@@ -624,9 +631,9 @@ const App = () => {
                                                         </div>
                                                     </div>
                                                 }
-                                                {((autoMode && catchment) || catchments) &&
+                                                {((quickMode && catchment) || catchments) &&
                                                     <div>
-                                                        <H5>{autoMode ? ("Download catchment") : ("Download catchment(s)")}</H5>
+                                                        <H5>{quickMode ? ("Download catchment") : ("Download catchment(s)")}</H5>
                                                         <div>
                                                             {FILETYPES.map(filetype => (
                                                                 <Button key={filetype}
@@ -655,7 +662,7 @@ const App = () => {
                                                    label={("Show streamlines")}/>}>
 
                                     {showStreamlines &&
-                                        <div>
+                                        <div style={{paddingLeft: 5, paddingRight: 10}}>
                                             <FormGroup label={("Streamline density")}>
                                                 <Slider value={tempStreamlinesThreshold || streamlinesThreshold}
                                                         min={0}
