@@ -98,11 +98,11 @@ function parts(geometries, TYPE) {
 
 module.exports.parts = parts;
 
-function totalPoints(geometries) {
-    var sum = 0;
-    geometries.forEach(function(g) { sum += g.length; });
-    return sum;
-}
+// function totalPoints(geometries) {
+//     var sum = 0;
+//     geometries.forEach(function(g) { sum += g.length; });
+//     return sum;
+// }
 
 function justCoords(coords, l) {
     if (l === undefined) l = [];

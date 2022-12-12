@@ -143,7 +143,7 @@ const App = () => {
     const smallScreen = window.screen.availWidth < 700;
 
     const [sidebarIsClosed, setSidebarIsClosed] = useState(smallScreen);
-    const [projection, setProjection] = useState("globe");
+    const [projection, setProjection] = useState("mercator");
     const [dark, setDark] = useState(false);
     const [mapStyle, setMapStyle] = useState(mapStyles[0]);
     const [outlet, setOutlet] = useState(null);
@@ -291,6 +291,18 @@ const App = () => {
             setOutlets({
                 ...outlets,
                 features: outlets.features.map(f => f.properties.id === movedOutlet.properties.id ? movedOutlet : f)
+            });
+        }
+    }
+
+    const handleDeleteOutlet = (index) => {
+        if (quickMode) {
+            setOutlet(null);
+            setCatchment(null);
+        } else {
+            setOutlets({
+                ...outlets,
+                features: outlets.features.filter((outlet, i) => i !== index)
             });
         }
     }
@@ -558,7 +570,7 @@ const App = () => {
                         <GeolocateControl position="top-right"/>
                         <MapControl position="top-right" component={
                             <button disabled={projection === 'globe' || (quickMode ? !catchment : !catchments)}
-                                    onClick={fitAll}><Icon icon="home"/></button>
+                                    onClick={fitAll}><Icon icon="clip"/></button>
                         }/>
                         {/*{quickMode && <DrawControl*/}
                         {/*    position="top-left"*/}
@@ -580,11 +592,12 @@ const App = () => {
                             </Source>}
                         <CatchmentSource data={quickMode ? catchment : catchments}/>
                         {quickMode && outlet &&
-                            <OutletMarker id="outlet" outlet={outlet} draggable={!locked} onContextMenu={handleShowContextMenu}
-                                          onDragEnd={handleMoveOutlet}/>}
-                        {!quickMode && outlets && outlets.features.map(o =>
-                            <OutletMarker id="outlet" key={o.properties.id} outlet={o} draggable={!locked}
+                            <OutletMarker id="outlet" outlet={outlet} draggable={!locked}
                                           onContextMenu={handleShowContextMenu}
+                                          onDragEnd={handleMoveOutlet} onDelete={handleDeleteOutlet}/>}
+                        {!quickMode && outlets && outlets.features.map((o, i) =>
+                            <OutletMarker id="outlet" key={o.properties.id} outlet={o} draggable={!locked}
+                                          index={i} onContextMenu={handleShowContextMenu} onDelete={handleDeleteOutlet}
                                           onDragEnd={handleMoveOutlet}/>)}
                     </Map>
                 </div>
@@ -698,7 +711,7 @@ const App = () => {
                                 <FormGroup inline label={("Projection")}>
                                     <RadioGroup selectedValue={projection} inline
                                                 onChange={e => setProjection(e.currentTarget.value)}>
-                                        {["Globe", "Mercator"].map(proj =>
+                                        {["Mercator", "Globe"].map(proj =>
                                             <Radio key={proj} value={proj.toLowerCase()} label={proj}/>)}
                                     </RadioGroup>
                                 </FormGroup>

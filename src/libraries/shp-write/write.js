@@ -1,9 +1,9 @@
 var types = require('./types'),
     dbf = require('dbf'),
     prj = require('./prj'),
-    ext = require('./extent'),
-    getFields = require('./fields'),
-    assert = require('assert'),
+    // ext = require('./extent'),
+    // getFields = require('./fields'),
+    // assert = require('assert'),
     pointWriter = require('./points'),
     polyWriter = require('./poly');
 
@@ -13,7 +13,7 @@ var writers = {
     3: polyWriter
 };
 
-var recordHeaderLength = 8;
+// var recordHeaderLength = 8;
 
 module.exports = write;
 
