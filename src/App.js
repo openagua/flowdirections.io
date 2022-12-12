@@ -96,7 +96,6 @@ const createOutlet = (lon, lat, id) => {
             "type": "Feature",
             "properties": {
                 "id": id,
-                "marker-symbol": "monument"
             },
             "geometry": {
                 "type": "Point",
@@ -189,6 +188,14 @@ const App = () => {
         }
         return _initialViewState;
     })
+
+    // useEffect(() => {
+    //     if (map.current) {
+    //         map.current.on('contextmenu', (e) => {
+    //             console.log('clicked!!!')
+    //         })
+    //     }
+    // }, [map.current])
 
     useEffect(() => {
         const resizer = new ResizeObserver(debounce(() => map.current && map.current.resize(), 0.5));
@@ -286,6 +293,10 @@ const App = () => {
                 features: outlets.features.map(f => f.properties.id === movedOutlet.properties.id ? movedOutlet : f)
             });
         }
+    }
+
+    const handleShowContextMenu = (outlet) => {
+        console.log('hi!!')
     }
 
     const handleQuickDelineate = (newOutlet) => {
@@ -564,16 +575,16 @@ const App = () => {
                                 <Layer
                                     source="streamlines-raster"
                                     type="raster"
-                                    paint={{
-                                        "raster-opacity": streamlinesOpacity / 100
-                                    }}
+                                    paint={{"raster-opacity": streamlinesOpacity / 100}}
                                 />
                             </Source>}
                         <CatchmentSource data={quickMode ? catchment : catchments}/>
                         {quickMode && outlet &&
-                            <OutletMarker outlet={outlet} draggable={!locked} onDragEnd={handleMoveOutlet}/>}
+                            <OutletMarker id="outlet" outlet={outlet} draggable={!locked} onContextMenu={handleShowContextMenu}
+                                          onDragEnd={handleMoveOutlet}/>}
                         {!quickMode && outlets && outlets.features.map(o =>
-                            <OutletMarker key={o.properties.id} outlet={o} draggable={!locked}
+                            <OutletMarker id="outlet" key={o.properties.id} outlet={o} draggable={!locked}
+                                          onContextMenu={handleShowContextMenu}
                                           onDragEnd={handleMoveOutlet}/>)}
                     </Map>
                 </div>
