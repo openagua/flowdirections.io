@@ -29,13 +29,12 @@ import Map, {
 } from 'react-map-gl';
 import {HotTable} from '@handsontable/react';
 import FileSaver from 'file-saver';
-
 import SearchControl from "./controls/SearchControl";
 import StylesControl from "./controls/StylesControl";
-
 import {OutletMarker, CatchmentSource, ExternalLink, Panel} from "./components";
-
 import MapControl from "./controls/MapControl";
+
+import shpwrite from './libraries/shp-write';
 
 // STYLES
 
@@ -86,6 +85,8 @@ const mapStyles = [
         url: 'mapbox://styles/mapbox/dark-v11'
     }
 ]
+
+const FILETYPES = ['GeoJSON', 'Shapefile'];
 
 const mapboxAccessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 
@@ -442,14 +443,46 @@ const App = () => {
         setAutoMode(!autoMode);
     }
 
-    const handleDownloadCatchments = () => {
-        const blob = new Blob([JSON.stringify(autoMode ? catchment : catchments, null, 2)], {type: "text/plain;charset=utf-8"});
-        FileSaver.saveAs(blob, "catchment.json");
-    }
-
-    const handleDownloadOutlets = () => {
-        const blob = new Blob([JSON.stringify(autoMode ? outlet : outlets, null, 2)], {type: "text/plain;charset=utf-8"});
-        FileSaver.saveAs(blob, `outlet${autoMode ? "" : "s"}.json`);
+    const handleDownload = (e) => {
+        const {objecttype, filetype} = e.currentTarget.dataset;
+        let shape;
+        switch (objecttype) {
+            case "outlet":
+                shape = autoMode ? outlet : outlets;
+                break;
+            case "catchment":
+                shape = autoMode ? catchment : catchments;
+                break;
+            default:
+                return;
+        }
+        const filenameBase = `${objecttype}${autoMode ? "" : "s"}`
+        switch (filetype) {
+            case "geojson":
+                const blob = new Blob([JSON.stringify(shape, null, 2)], {type: "text/plain;charset=utf-8"});
+                FileSaver.saveAs(blob, `${filenameBase}.json`);
+                break;
+            case "shapefile":
+                const data = shape.type === 'FeatureCollection' ? shape : {
+                    type: 'FeatureCollection',
+                    features: [shape]
+                };
+                const options = {
+                    folder: filenameBase,
+                    type: 'blob',
+                    types: {
+                        point: filenameBase,
+                        polygon: filenameBase,
+                        line: filenameBase
+                    }
+                }
+                shpwrite.zip(data, options).then(blob => {
+                    FileSaver.saveAs(blob, `${filenameBase}.zip`);
+                });
+                break;
+            default:
+                return;
+        }
     }
 
     const handleClearWorkspace = () => {
@@ -472,7 +505,8 @@ const App = () => {
             </div>
             <Navbar>
                 <NavbarGroup align="left">
-                    <Navbar.Heading><a href="https://flowdirections.io">flowdirections.io</a></Navbar.Heading>
+                    {smallScreen ? null :
+                        <Navbar.Heading><a href={document.location.host}>{document.location.host}</a></Navbar.Heading>}
                     <Switch large label={"Lock editing"} style={{margin: 0, marginLeft: 10}} checked={locked}
                             onChange={handleChangeLocked}/>
                     <Button minimal icon={dark ? "flash" : "moon"} style={{marginLeft: 10}}
@@ -544,8 +578,8 @@ const App = () => {
                                     {("Clear workspace")}</Button>
                                 <br/>
                                 <FormGroup
-                                    helperText={("Auto mode will delineate a catchment as soon as you left-click a map.")}>
-                                    <Switch large checked={autoMode} onChange={changeMode} label={("Auto mode")}/>
+                                    helperText={("Quick mode will delineate a single catchment as soon as you click on the map.")}>
+                                    <Switch large checked={autoMode} onChange={changeMode} label={("Quick mode")}/>
                                 </FormGroup>
                                 {!autoMode && <div>
                                     <div>
@@ -560,7 +594,7 @@ const App = () => {
                                                 height="auto"
                                                 licenseKey="non-commercial-and-evaluation" // for non-commercial use only
                                             /> : <div>
-                                                Add outlets by left-clicking on the map.
+                                                Add multiple outlets by clicking on the map.
                                             </div>}
                                     </div>
                                     {outlets && <div style={{marginTop: 10, marginBottom: 10}}>
@@ -581,10 +615,12 @@ const App = () => {
                                                     <div>
                                                         <H5>{autoMode ? ("Download outlet") : ("Download outlet(s)")}</H5>
                                                         <div>
-                                                            <Button small
-                                                                    onClick={handleDownloadOutlets}>GeoJSON</Button>
-                                                            {/*<Button small*/}
-                                                            {/*        onClick={handleDownloadOutlets}>Shapefile</Button>*/}
+                                                            {FILETYPES.map(filetype => (
+                                                                <Button key={filetype}
+                                                                        data-filetype={filetype.toLowerCase()}
+                                                                        data-objecttype="outlet" small
+                                                                        onClick={handleDownload}>{filetype}</Button>
+                                                            ))}
                                                         </div>
                                                     </div>
                                                 }
@@ -592,10 +628,12 @@ const App = () => {
                                                     <div>
                                                         <H5>{autoMode ? ("Download catchment") : ("Download catchment(s)")}</H5>
                                                         <div>
-                                                            <Button small
-                                                                    onClick={handleDownloadCatchments}>GeoJSON</Button>
-                                                            {/*<Button small*/}
-                                                            {/*        onClick={handleDownloadCatchments}>Shapefile</Button>*/}
+                                                            {FILETYPES.map(filetype => (
+                                                                <Button key={filetype}
+                                                                        data-filetype={filetype.toLowerCase()}
+                                                                        data-objecttype="catchment" small
+                                                                        onClick={handleDownload}>{filetype}</Button>
+                                                            ))}
                                                         </div>
                                                     </div>
                                                 }

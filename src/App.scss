@@ -21,7 +21,9 @@ button {
 }
 
 .mapboxgl-ctrl-group button {
-  background-color: unset !important;
+  .bp4-dark & {
+    background: $dark-gray5;
+  }
 }
 
 .mapboxgl-ctrl-geocoder input[type='text'] {
@@ -72,6 +74,7 @@ div, span {
 
 .map-styles-control-button {
   text-align: center;
+  border-radius: 4px !important;
 }
 
 .map-sidebar {

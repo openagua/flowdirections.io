@@ -35,9 +35,9 @@ const StylesControl = ({position, mapStyles, initialSelected, onChange}) => {
                         )}
                     </div>
                 }>
-                <Button large minimal className="map-styles-control-button">
+                <button className="map-styles-control-button">
                     <Icon size={20} icon="layers"/>
-                </Button>
+                </button>
             </Popover2>
         }/>
     )
