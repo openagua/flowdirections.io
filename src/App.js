@@ -648,7 +648,7 @@ const App = () => {
                                 </FormGroup>
                                 <div>
                                     <H5>{quickMode ? ("Outlet") : ("Outlet(s)")}</H5>
-                                    {!quickMode && <div>
+                                    {!quickMode &&
                                         <div>
                                             {outlets && outlets.features.length ?
                                                 <HotTable
@@ -663,14 +663,13 @@ const App = () => {
                                                 /> : <div>
                                                     Add multiple outlets by clicking on the map.
                                                 </div>}
-                                        </div>
-                                        {outlets && <div style={{marginTop: 10, marginBottom: 10}}>
-                                            <Button intent="primary"
-                                                    onClick={handleDelineateMany}>{("Delineate")}</Button>
                                         </div>}
-                                    </div>}
-                                    <DownloadMenu objecttype="outlet"
-                                                  data={quickMode ? outlet : outlets}/>
+                                    <div style={{marginTop: 10, marginBottom: 10, display: "flex"}}>
+                                        {!quickMode && <Button intent="primary" disabled={!outlets} style={{marginRight: 5}}
+                                                            onClick={handleDelineateMany}>{("Delineate")}</Button>}
+                                        <DownloadMenu objecttype="outlet"
+                                                      data={quickMode ? outlet : outlets}/>
+                                    </div>
                                 </div>
                                 <br/>
                                 <div className="catchments">
