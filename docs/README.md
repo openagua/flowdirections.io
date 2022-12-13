@@ -1,10 +1,8 @@
-[![Netlify Status](https://api.netlify.com/api/v1/badges/3904b96f-f6b2-4e10-aabd-44f74873b9a2/deploy-status)](https://app.netlify.com/sites/flowdirections/deploys)
+[flowdirections.io](https://flowdirections.io) helps you delineate catchments.
 
-flowdirections.io helps you delineate catchments.
+# Quick start
 
-# Usage
-
-While it is best to just play with it to figure out how to use it, here are some tips for basic usage:
+While it is best to just play with the app to figure out how to use it, here are some tips for basic usage:
 
 * To quickly delineate a single catchment, just click a point. That's it! Once the catchment is delineated, you may then download the catchment as a GeoJSON file.
 * To delineate multiple catchments, turn off "Quick mode" under the "Home" tab, click the map where you want your outlets, then click "Delineate".
