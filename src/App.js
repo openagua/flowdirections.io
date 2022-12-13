@@ -21,7 +21,6 @@ import {
     Toaster,
     Spinner,
     Icon,
-    Checkbox,
 } from "@blueprintjs/core";
 import {Popover2} from "@blueprintjs/popover2";
 import Map, {
@@ -38,7 +37,7 @@ import StylesControl from "./controls/StylesControl";
 import {OutletMarker, CatchmentSource, ExternalLink, Panel} from "./components";
 import MapControl from "./controls/MapControl";
 
-import shpwrite from './libraries/shp-write';
+// import shpwrite from './libraries/shp-write';
 
 // STYLES
 
@@ -89,7 +88,8 @@ const mapStyles = [
     }
 ]
 
-const FILETYPES = ['GeoJSON', 'Shapefile'];
+// const FILETYPES = ['GeoJSON', 'Shapefile'];
+const FILETYPES = ['GeoJSON'];
 
 const mapboxAccessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 
@@ -158,24 +158,24 @@ const DownloadMenu = ({objecttype, data}) => {
                 const blob = new Blob([JSON.stringify(shape, null, 2)], {type: "text/plain;charset=utf-8"});
                 FileSaver.saveAs(blob, `${filenameBase}.json`);
                 break;
-            case "shapefile":
-                const data = shape.type === 'FeatureCollection' ? shape : {
-                    type: 'FeatureCollection',
-                    features: [shape]
-                };
-                const options = {
-                    folder: filenameBase,
-                    type: 'blob',
-                    types: {
-                        point: filenameBase,
-                        polygon: filenameBase,
-                        line: filenameBase
-                    }
-                }
-                shpwrite.zip(data, options).then(blob => {
-                    FileSaver.saveAs(blob, `${filenameBase}.zip`);
-                });
-                break;
+            // case "shapefile":
+            //     const data = shape.type === 'FeatureCollection' ? shape : {
+            //         type: 'FeatureCollection',
+            //         features: [shape]
+            //     };
+            //     const options = {
+            //         folder: filenameBase,
+            //         type: 'blob',
+            //         types: {
+            //             point: filenameBase,
+            //             polygon: filenameBase,
+            //             line: filenameBase
+            //         }
+            //     }
+            //     shpwrite.zip(data, options).then(blob => {
+            //         FileSaver.saveAs(blob, `${filenameBase}.zip`);
+            //     });
+            //     break;
             default:
                 return;
         }
