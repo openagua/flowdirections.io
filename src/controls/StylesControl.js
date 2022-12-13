@@ -17,7 +17,9 @@ const StylesControl = ({position, mapStyles, initialSelected, onChange}) => {
         <MapControl position={position} component={
             <Popover2
                 interactionKind="hover"
-                position="left-bottom"
+                // isOpen={true}
+                // usePortal={false}
+                placement="right-end"
                 content={
                     <div className="map-styles-control">
                         {mapStyles.map(mapStyle => {

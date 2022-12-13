@@ -3,13 +3,18 @@ import {cloneElement} from "react";
 // import ReactDOM from "react-dom/client";
 import {createPortal} from "react-dom";
 import {useControl} from "react-map-gl";
+import classNames from "classnames";
 
 class CustomControl {
 
+    constructor({className}) {
+        this._container = document.createElement('div');
+        this._container.className = classNames('mapboxgl-ctrl', 'mapboxgl-ctrl-group', className);
+    }
+
+
     onAdd(map) {
         this._map = map;
-        this._container = document.createElement('div');
-        this._container.className = 'mapboxgl-ctrl mapboxgl-ctrl-group';
         return this._container;
     }
 
@@ -27,10 +32,10 @@ class CustomControl {
     }
 }
 
-const MapControl = ({position, component}) => {
+const MapControl = ({position, className, component}) => {
 
     const ctrl = useControl(() => {
-        return new CustomControl();
+        return new CustomControl({className});
     }, {position});
 
     const map = ctrl.getMap();
