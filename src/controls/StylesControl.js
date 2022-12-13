@@ -1,9 +1,18 @@
-import {Button, Icon} from "@blueprintjs/core";
+import {Button, Checkbox, Icon} from "@blueprintjs/core";
 import {Popover2} from "@blueprintjs/popover2";
 import MapControl from "./MapControl";
 import {useState} from "react";
 
-const StylesControl = ({position, mapStyles, initialSelected, onChange}) => {
+const StylesControl = ({
+                           position,
+                           mapStyles,
+                           initialSelected,
+                           showTerrain,
+                           projection,
+                           onChange,
+                           onChangeTerrain,
+                           onChangeProjection
+                       }) => {
 
     const [selected, setSelected] = useState(initialSelected);
 
@@ -17,8 +26,7 @@ const StylesControl = ({position, mapStyles, initialSelected, onChange}) => {
         <MapControl position={position} component={
             <Popover2
                 interactionKind="hover"
-                // isOpen={true}
-                // usePortal={false}
+                // isOpen
                 placement="right-end"
                 content={
                     <div className="map-styles-control">
@@ -35,6 +43,12 @@ const StylesControl = ({position, mapStyles, initialSelected, onChange}) => {
                                 )
                             }
                         )}
+                        <div className="checkboxes">
+                            <Checkbox label={("Globe view")} checked={projection === "globe"}
+                                      onClick={onChangeProjection}/>
+                            <Checkbox label={("3D Terrain")} checked={showTerrain}
+                                      onClick={onChangeTerrain}/>
+                        </div>
                     </div>
                 }>
                 <button className="map-styles-control-button">

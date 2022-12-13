@@ -20,9 +20,21 @@ button {
   }
 }
 
-.mapboxgl-ctrl-group button {
-  .bp4-dark & {
-    background: $dark-gray5;
+.mapboxgl-ctrl-group {
+  button {
+    .bp4-dark & {
+      background: $dark-gray5;
+    }
+  }
+
+  &.autozoom {
+    padding: 0;
+
+    label {
+      margin: 0;
+      padding-right: 5px;
+      padding-left: 30px;
+    }
   }
 }
 
@@ -42,14 +54,6 @@ div, span {
 .download-area button {
   //margin-bottom: 5px;
   //margin-left: 5px;
-}
-
-.globe-view, .terrain-view {
-  float: unset;
-  padding: 0 3px;
-  label {
-    margin: 0;
-  }
 }
 
 .map-styles-control {
@@ -86,6 +90,16 @@ div, span {
 
     img {
       width: 100%;
+    }
+  }
+
+  .checkboxes {
+    padding: 5px;
+    display: flex;
+
+    label {
+      margin-right: 5px;
+      margin-left: 5px;
     }
   }
 }

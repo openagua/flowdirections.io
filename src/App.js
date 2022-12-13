@@ -20,7 +20,8 @@ import {
     Tabs,
     Toaster,
     Spinner,
-    Icon, Checkbox,
+    Icon,
+    Checkbox,
 } from "@blueprintjs/core";
 import {Popover2} from "@blueprintjs/popover2";
 import Map, {
@@ -455,6 +456,10 @@ const App = () => {
         setShowTerrain(!showTerrain);
     }
 
+    const handleChangeProjection = () => {
+        setProjection(projection === 'mercator' ? 'globe' : 'mercator');
+    }
+
     useEffect(() => {
         if (map.current) {
             setCursor('crosshair')
@@ -641,15 +646,15 @@ const App = () => {
                             <button disabled={projection === 'globe' || (quickMode ? !catchment : !catchments)}
                                     onClick={fitAll}><Icon icon="clip"/></button>
                         }/>
-                        <MapControl position="bottom-left" className="terrain-view" component={
-                            <Checkbox label={("3D Terrain")} checked={showTerrain}
-                                      onClick={toggleShowTerrain}/>
-                        }/>
-                        <MapControl position="bottom-left" className="globe-view" component={
-                            <Checkbox label={("Globe view")} checked={projection === "globe"}
-                                      onClick={() => setProjection(projection === "globe" ? "mercator" : "globe")}/>
-                        }/>
-                        <StylesControl position="bottom-left" mapStyles={mapStyles} onChange={handleChangeMapStyle}
+                        {/*<MapControl position="top-right" className="autozoom" component={*/}
+                        {/*    <Checkbox label={("Autozoom")} checked={projection !== "globe" ? autoZoom : false}*/}
+                        {/*              onClick={handleChangeAutoZoom}/>*/}
+                        {/*}/>*/}
+                        <StylesControl position="bottom-left" mapStyles={mapStyles} showTerrain={showTerrain}
+                                       projection={projection}
+                                       onChangeProjection={handleChangeProjection}
+                                       onChange={handleChangeMapStyle}
+                                       onChangeTerrain={toggleShowTerrain}
                                        initialSelected={mapStyle.id}/>
                         <ScaleControl position="bottom-right"/>
                         {streamlinesTiles &&
