@@ -45,7 +45,8 @@ module.exports.write = function writePoints(geometries, extent, shpView, shxView
             }
             return arr;
         }, []);
-        for (var p = 1; p < noParts; p++) {
+        [...new Array(noParts-1)].forEach((_, i) => {
+            const p = i + 1;
             shpView.setInt32( // set part index
                 shpI + 52 + (p * 4),
                 onlyParts.reduce(function (a, b, idx) {
@@ -53,7 +54,7 @@ module.exports.write = function writePoints(geometries, extent, shpView, shxView
                 }, 0),
                 true
             );
-        }
+        })
 
         flattened.forEach(function writeLine(coords, i) {
             shpView.setFloat64(shpI + 56 + (i * 16) + (noParts - 1) * 4, coords[0], true); // X

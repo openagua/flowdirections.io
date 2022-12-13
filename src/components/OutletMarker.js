@@ -36,10 +36,10 @@ const OutletMarker = ({index, outlet, draggable, onDragEnd, onDelete}) => {
                 position="top"
                 content={
                     <div style={{padding: 5}}>
-                        <Button onClick={handleDelete} small icon="trash" intent="danger">Delete</Button>
+                        <Button minimal onClick={handleDelete} small icon="trash" intent="danger">{("Delete outlet")}</Button>
                     </div>
                 }>
-                <Icon size={size} color="red" icon="target"/>
+                <Icon size={size} color="#00ff00" icon="selection"/>
             </ContextMenu2>
         </Marker>
     )

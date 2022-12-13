@@ -40,18 +40,28 @@ div, span {
 }
 
 .download-area button {
-  margin-bottom: 5px;
-  margin-left: 5px;
+  //margin-bottom: 5px;
+  //margin-left: 5px;
+}
+
+.globe-view, .terrain-view {
+  float: unset;
+  padding: 0 3px;
+  label {
+    margin: 0;
+  }
 }
 
 .map-styles-control {
-  width: unset;
   display: flex;
-  //background: rgba(255, 255, 255, 1);
   border-radius: 7px;
   padding: 5px;
+  width: 265px;
+  flex-wrap: wrap;
 
   button {
+    height: 95px;
+    min-width: 75px;
     width: 75px;
     text-align: center;
     margin: 5px;
@@ -59,8 +69,16 @@ div, span {
     border-radius: 4px !important;
     border-width: 2px !important;
     border-color: rgba(0, 0, 0, 0) !important;
-
+    display: flex;
     outline: none !important;
+
+    .bp4-button-text {
+      margin: auto;
+    }
+
+    &:hover {
+      border-color: grey;
+    }
 
     &.selected {
       border-color: #4C90F0 !important;
@@ -89,6 +107,7 @@ div, span {
   .sidebar-closed & {
     right: -$sidebar-width;
   }
+
   transition: right $sidebar-transition-duration;
 }
 

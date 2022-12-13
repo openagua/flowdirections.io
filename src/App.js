@@ -8,6 +8,8 @@ import {
     Button,
     FormGroup,
     H5,
+    Menu,
+    MenuItem,
     Navbar,
     NavbarGroup,
     Radio,
@@ -18,8 +20,9 @@ import {
     Tabs,
     Toaster,
     Spinner,
-    Icon,
+    Icon, Checkbox,
 } from "@blueprintjs/core";
+import {Popover2} from "@blueprintjs/popover2";
 import Map, {
     GeolocateControl,
     Source,
@@ -44,7 +47,6 @@ import '@blueprintjs/core/lib/css/blueprint.css';
 import "@blueprintjs/popover2/lib/css/blueprint-popover2.css";
 
 import 'mapbox-gl/dist/mapbox-gl.css';
-// import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import 'handsontable/dist/handsontable.full.min.css';
 
@@ -67,10 +69,10 @@ const mapStyles = [
         id: 'mapbox-satellite',
         label: 'Satellite',
         url: 'mapbox://styles/mapbox/satellite-v9'
-    }, {
-        id: 'mapbox-satellite-streets',
-        label: 'Satellite Streets',
-        url: 'mapbox://styles/mapbox/satellite-streets-v12'
+        // }, {
+        //     id: 'mapbox-satellite-streets',
+        //     label: 'Satellite Streets',
+        //     url: 'mapbox://styles/mapbox/satellite-streets-v12'
     }, {
         id: 'mapbox-outdoors',
         label: 'Outdoors',
@@ -134,6 +136,71 @@ class Toast {
 
 const notify = new Toast();
 
+const DownloadMenu = ({objecttype, data}) => {
+
+    const handleDownload = (e) => {
+        const {filetype} = e.currentTarget.dataset;
+        let shape;
+        switch (objecttype) {
+            case "outlet":
+                shape = data;
+                break;
+            case "catchment":
+                shape = data;
+                break;
+            default:
+                return;
+        }
+        const filenameBase = `${objecttype}${data.features && data.features.length > 1 ? "s" : ""}`
+        switch (filetype) {
+            case "geojson":
+                const blob = new Blob([JSON.stringify(shape, null, 2)], {type: "text/plain;charset=utf-8"});
+                FileSaver.saveAs(blob, `${filenameBase}.json`);
+                break;
+            case "shapefile":
+                const data = shape.type === 'FeatureCollection' ? shape : {
+                    type: 'FeatureCollection',
+                    features: [shape]
+                };
+                const options = {
+                    folder: filenameBase,
+                    type: 'blob',
+                    types: {
+                        point: filenameBase,
+                        polygon: filenameBase,
+                        line: filenameBase
+                    }
+                }
+                shpwrite.zip(data, options).then(blob => {
+                    FileSaver.saveAs(blob, `${filenameBase}.zip`);
+                });
+                break;
+            default:
+                return;
+        }
+    }
+
+    const disabled = !data;
+
+    return (
+        <div>
+            <Popover2 disabled={disabled} placement="bottom-start"
+                      minimal content={
+                <Menu>
+                    {FILETYPES.map(filetype => (
+                        <MenuItem key={filetype} data-filetype={filetype.toLowerCase()} small
+                                  text={filetype} onClick={handleDownload}/>
+                    ))}
+                </Menu>
+            }>
+                <Button intent="primary" disabled={disabled} text={("Download")}
+                        rightIcon="caret-down"/>
+            </Popover2>
+
+        </div>
+    )
+}
+
 const App = () => {
     const map = useRef();
     const cursor = useRef();
@@ -144,7 +211,7 @@ const App = () => {
 
     const [sidebarIsClosed, setSidebarIsClosed] = useState(smallScreen);
     const [projection, setProjection] = useState("mercator");
-    const [dark, setDark] = useState(false);
+    const [dark,] = useState(false);
     const [mapStyle, setMapStyle] = useState(mapStyles[0]);
     const [outlet, setOutlet] = useState(null);
     const [resolution, setResolution] = useState(30);
@@ -197,8 +264,14 @@ const App = () => {
     //     }
     // }, [map.current])
 
+    const redrawMap = () => map.current && map.current.resize();
+
     useEffect(() => {
-        const resizer = new ResizeObserver(debounce(() => map.current && map.current.resize(), 0.5));
+        debounce(redrawMap, 0.5)
+    }, [projection])
+
+    useEffect(() => {
+        const resizer = new ResizeObserver(debounce(() => redrawMap(), 0.5));
         const mapDiv = document.getElementById('map');
         resizer.observe(mapDiv);
         return () => {
@@ -326,7 +399,7 @@ const App = () => {
                 setCatchment(data);
                 originalCatchment.current = data;
                 setWorking(false);
-                notify.success("Success!")
+                // notify.success("Success!")
 
                 autoZoom && flyTo(data);
             })
@@ -470,47 +543,47 @@ const App = () => {
         setQuickMode(!quickMode);
     }
 
-    const handleDownload = (e) => {
-        const {objecttype, filetype} = e.currentTarget.dataset;
-        let shape;
-        switch (objecttype) {
-            case "outlet":
-                shape = quickMode ? outlet : outlets;
-                break;
-            case "catchment":
-                shape = quickMode ? catchment : catchments;
-                break;
-            default:
-                return;
-        }
-        const filenameBase = `${objecttype}${quickMode ? "" : "s"}`
-        switch (filetype) {
-            case "geojson":
-                const blob = new Blob([JSON.stringify(shape, null, 2)], {type: "text/plain;charset=utf-8"});
-                FileSaver.saveAs(blob, `${filenameBase}.json`);
-                break;
-            case "shapefile":
-                const data = shape.type === 'FeatureCollection' ? shape : {
-                    type: 'FeatureCollection',
-                    features: [shape]
-                };
-                const options = {
-                    folder: filenameBase,
-                    type: 'blob',
-                    types: {
-                        point: filenameBase,
-                        polygon: filenameBase,
-                        line: filenameBase
-                    }
-                }
-                shpwrite.zip(data, options).then(blob => {
-                    FileSaver.saveAs(blob, `${filenameBase}.zip`);
-                });
-                break;
-            default:
-                return;
-        }
-    }
+    // const handleDownload = (e) => {
+    //     const {objecttype, filetype} = e.currentTarget.dataset;
+    //     let shape;
+    //     switch (objecttype) {
+    //         case "outlet":
+    //             shape = quickMode ? outlet : outlets;
+    //             break;
+    //         case "catchment":
+    //             shape = quickMode ? catchment : catchments;
+    //             break;
+    //         default:
+    //             return;
+    //     }
+    //     const filenameBase = `${objecttype}${quickMode ? "" : "s"}`
+    //     switch (filetype) {
+    //         case "geojson":
+    //             const blob = new Blob([JSON.stringify(shape, null, 2)], {type: "text/plain;charset=utf-8"});
+    //             FileSaver.saveAs(blob, `${filenameBase}.json`);
+    //             break;
+    //         case "shapefile":
+    //             const data = shape.type === 'FeatureCollection' ? shape : {
+    //                 type: 'FeatureCollection',
+    //                 features: [shape]
+    //             };
+    //             const options = {
+    //                 folder: filenameBase,
+    //                 type: 'blob',
+    //                 types: {
+    //                     point: filenameBase,
+    //                     polygon: filenameBase,
+    //                     line: filenameBase
+    //                 }
+    //             }
+    //             shpwrite.zip(data, options).then(blob => {
+    //                 FileSaver.saveAs(blob, `${filenameBase}.zip`);
+    //             });
+    //             break;
+    //         default:
+    //             return;
+    //     }
+    // }
 
     const handleClearWorkspace = () => {
         setOutlet(null);
@@ -519,11 +592,7 @@ const App = () => {
         setCatchments(null);
     }
 
-    // const changeSelectedTab = (e, value) => {
-    //     setSelectedTab(value);
-    // }
-
-    // const simplifyMax = 0.01;
+    // const canDownloadOutlets = (quickMode && outlet) || outlets;
 
     return (
         <div className={classNames("app", {[DARK]: dark}, sidebarIsClosed ? "sidebar-closed" : "")}>
@@ -536,8 +605,8 @@ const App = () => {
                         <Navbar.Heading><a href={document.location.host}>{document.location.host}</a></Navbar.Heading>}
                     <Switch large label={"Lock editing"} style={{margin: 0, marginLeft: 10}} checked={locked}
                             onChange={handleChangeLocked}/>
-                    <Button minimal icon={dark ? "flash" : "moon"} style={{marginLeft: 10}}
-                            onClick={() => setDark(!dark)}/>
+                    {/*<Button minimal icon={dark ? "flash" : "moon"} style={{marginLeft: 10}}*/}
+                    {/*        onClick={() => setDark(!dark)}/>*/}
                 </NavbarGroup>
                 <NavbarGroup align="right">
                     <a href={process.env.REACT_APP_DONATE_LINK} target="_blank" rel="noreferrer"
@@ -550,7 +619,7 @@ const App = () => {
                 <div id="map" className="map">
                     <Map
                         ref={map}
-                        key={projection}
+                        // key={projection}
                         initialViewState={initialViewState}
                         maxPitch={85}
                         onLoad={handleLoadMap}
@@ -572,12 +641,14 @@ const App = () => {
                             <button disabled={projection === 'globe' || (quickMode ? !catchment : !catchments)}
                                     onClick={fitAll}><Icon icon="clip"/></button>
                         }/>
-                        {/*{quickMode && <DrawControl*/}
-                        {/*    position="top-left"*/}
-                        {/*    displayControlsDefault={false}*/}
-                        {/*    controls={{point: true, trash: true}}*/}
-                        {/*    onUpdate={setOutlets}*/}
-                        {/*/>}*/}
+                        <MapControl position="bottom-left" className="terrain-view" component={
+                            <Checkbox label={("3D Terrain")} checked={showTerrain}
+                                      onClick={toggleShowTerrain}/>
+                        }/>
+                        <MapControl position="bottom-left" className="globe-view" component={
+                            <Checkbox label={("Globe view")} checked={projection === "globe"}
+                                      onClick={() => setProjection(projection === "globe" ? "mercator" : "globe")}/>
+                        }/>
                         <StylesControl position="bottom-left" mapStyles={mapStyles} onChange={handleChangeMapStyle}
                                        initialSelected={mapStyle.id}/>
                         <ScaleControl position="bottom-right"/>
@@ -633,43 +704,25 @@ const App = () => {
                                     </div>}
                                 </div>}
                                 <div className="bottom">
-                                    {(catchment || catchments) &&
+
+
+                                    {/*<FormLabel>Simplify</FormLabel>*/}
+                                    {/*<Slider defaultValue={0} step={simplifyMax/10} min={0} max={simplifyMax}*/}
+                                    {/*        onChange={handleChangeSimplification}/>*/}
+
+                                    <div className="download-area">
                                         <div>
-
-                                            {/*<FormLabel>Simplify</FormLabel>*/}
-                                            {/*<Slider defaultValue={0} step={simplifyMax/10} min={0} max={simplifyMax}*/}
-                                            {/*        onChange={handleChangeSimplification}/>*/}
-
-                                            {/*<Button variant="contained">Shapefile</Button>*/}
-                                            <div className="download-area">
-                                                {((quickMode && outlet) || outlets) &&
-                                                    <div>
-                                                        <H5>{quickMode ? ("Download outlet") : ("Download outlet(s)")}</H5>
-                                                        <div>
-                                                            {FILETYPES.map(filetype => (
-                                                                <Button key={filetype}
-                                                                        data-filetype={filetype.toLowerCase()}
-                                                                        data-objecttype="outlet" small
-                                                                        onClick={handleDownload}>{filetype}</Button>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                }
-                                                {((quickMode && catchment) || catchments) &&
-                                                    <div>
-                                                        <H5>{quickMode ? ("Download catchment") : ("Download catchment(s)")}</H5>
-                                                        <div>
-                                                            {FILETYPES.map(filetype => (
-                                                                <Button key={filetype}
-                                                                        data-filetype={filetype.toLowerCase()}
-                                                                        data-objecttype="catchment" small
-                                                                        onClick={handleDownload}>{filetype}</Button>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                }
-                                            </div>
-                                        </div>}
+                                            <H5>{quickMode ? ("Outlet") : ("Outlet(s)")}</H5>
+                                            <DownloadMenu objecttype="outlet"
+                                                          data={quickMode ? outlet : outlets}/>
+                                        </div>
+                                        <br/>
+                                        <div>
+                                            <H5>{quickMode ? ("Catchment") : ("Catchment(s)")}</H5>
+                                            <DownloadMenu objecttype="catchment"
+                                                          data={quickMode ? catchment : catchments}/>
+                                        </div>
+                                    </div>
                                 </div>
 
                             </Panel>
@@ -708,15 +761,6 @@ const App = () => {
 
                                         </div>}
                                 </FormGroup>
-                                <FormGroup inline label={("Projection")}>
-                                    <RadioGroup selectedValue={projection} inline
-                                                onChange={e => setProjection(e.currentTarget.value)}>
-                                        {["Mercator", "Globe"].map(proj =>
-                                            <Radio key={proj} value={proj.toLowerCase()} label={proj}/>)}
-                                    </RadioGroup>
-                                </FormGroup>
-                                <Switch large checked={showTerrain} onChange={toggleShowTerrain}
-                                        label={("Show 3-D terrain")}/>
                                 <Switch large checked={projection !== "globe" ? autoZoom : false}
                                         disabled={projection === "globe"} onChange={handleChangeAutoZoom}
                                         label={("Autozoom")}/>
@@ -732,15 +776,12 @@ const App = () => {
                                     <ExternalLink href="https://www.mapbox.com">Mapbox</ExternalLink> for the
                                     mapping environment. <ExternalLink
                                     href="https://www.github.com/openagua/flowdirections.io#readme">Read
-                                    more here</ExternalLink>. The app is also inspired by <ExternalLink
-                                    href="https://geojson.io/">geojson.io</ExternalLink>, which you may find
-                                    useful.
+                                    more here</ExternalLink>.
                                 </p>
                                 <p>
                                     "flowdirections" refers to a flow direction grid, a key intermediary in the
-                                    catchment delineation process and other DEM-derived analyses. It also
-                                    invokes mapping water and its movement ("hydrography" doesn't roll off the
-                                    tongue as smoothly).
+                                    catchment delineation process and other DEM-based hydrologic analyses. It also
+                                    evokes the general movement of water.
                                 </p>
                                 <h4>Other similar/related tools</h4>
                                 <ul>
