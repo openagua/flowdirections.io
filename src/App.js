@@ -548,48 +548,6 @@ const App = () => {
         setQuickMode(!quickMode);
     }
 
-    // const handleDownload = (e) => {
-    //     const {objecttype, filetype} = e.currentTarget.dataset;
-    //     let shape;
-    //     switch (objecttype) {
-    //         case "outlet":
-    //             shape = quickMode ? outlet : outlets;
-    //             break;
-    //         case "catchment":
-    //             shape = quickMode ? catchment : catchments;
-    //             break;
-    //         default:
-    //             return;
-    //     }
-    //     const filenameBase = `${objecttype}${quickMode ? "" : "s"}`
-    //     switch (filetype) {
-    //         case "geojson":
-    //             const blob = new Blob([JSON.stringify(shape, null, 2)], {type: "text/plain;charset=utf-8"});
-    //             FileSaver.saveAs(blob, `${filenameBase}.json`);
-    //             break;
-    //         case "shapefile":
-    //             const data = shape.type === 'FeatureCollection' ? shape : {
-    //                 type: 'FeatureCollection',
-    //                 features: [shape]
-    //             };
-    //             const options = {
-    //                 folder: filenameBase,
-    //                 type: 'blob',
-    //                 types: {
-    //                     point: filenameBase,
-    //                     polygon: filenameBase,
-    //                     line: filenameBase
-    //                 }
-    //             }
-    //             shpwrite.zip(data, options).then(blob => {
-    //                 FileSaver.saveAs(blob, `${filenameBase}.zip`);
-    //             });
-    //             break;
-    //         default:
-    //             return;
-    //     }
-    // }
-
     const handleClearWorkspace = () => {
         setOutlet(null);
         setOutlets(null);
@@ -688,46 +646,37 @@ const App = () => {
                                     helperText={("Quick mode will delineate a single catchment as soon as you click on the map.")}>
                                     <Switch large checked={quickMode} onChange={changeMode} label={("Quick mode")}/>
                                 </FormGroup>
-                                {!quickMode && <div>
-                                    <div>
-                                        {outlets && outlets.features.length ?
-                                            <HotTable
-                                                data={outlets.features.map(o => {
-                                                    const coords = o.geometry.coordinates;
-                                                    return ([coords[0], coords[1]])
-                                                })}
-                                                rowHeaders={true}
-                                                colHeaders={["Lon", "Lat"]}
-                                                height="auto"
-                                                licenseKey="non-commercial-and-evaluation" // for non-commercial use only
-                                            /> : <div>
-                                                Add multiple outlets by clicking on the map.
-                                            </div>}
-                                    </div>
-                                    {outlets && <div style={{marginTop: 10, marginBottom: 10}}>
-                                        <Button intent="primary" onClick={handleDelineateMany}>{("Delineate")}</Button>
+                                <div>
+                                    <H5>{quickMode ? ("Outlet") : ("Outlet(s)")}</H5>
+                                    {!quickMode && <div>
+                                        <div>
+                                            {outlets && outlets.features.length ?
+                                                <HotTable
+                                                    data={outlets.features.map(o => {
+                                                        const coords = o.geometry.coordinates;
+                                                        return ([coords[0], coords[1]])
+                                                    })}
+                                                    rowHeaders={true}
+                                                    colHeaders={["Lon", "Lat"]}
+                                                    height="auto"
+                                                    licenseKey="non-commercial-and-evaluation" // for non-commercial use only
+                                                /> : <div>
+                                                    Add multiple outlets by clicking on the map.
+                                                </div>}
+                                        </div>
+                                        {outlets && <div style={{marginTop: 10, marginBottom: 10}}>
+                                            <Button intent="primary"
+                                                    onClick={handleDelineateMany}>{("Delineate")}</Button>
+                                        </div>}
                                     </div>}
-                                </div>}
-                                <div className="bottom">
-
-
-                                    {/*<FormLabel>Simplify</FormLabel>*/}
-                                    {/*<Slider defaultValue={0} step={simplifyMax/10} min={0} max={simplifyMax}*/}
-                                    {/*        onChange={handleChangeSimplification}/>*/}
-
-                                    <div className="download-area">
-                                        <div>
-                                            <H5>{quickMode ? ("Outlet") : ("Outlet(s)")}</H5>
-                                            <DownloadMenu objecttype="outlet"
-                                                          data={quickMode ? outlet : outlets}/>
-                                        </div>
-                                        <br/>
-                                        <div>
-                                            <H5>{quickMode ? ("Catchment") : ("Catchment(s)")}</H5>
-                                            <DownloadMenu objecttype="catchment"
-                                                          data={quickMode ? catchment : catchments}/>
-                                        </div>
-                                    </div>
+                                    <DownloadMenu objecttype="outlet"
+                                                  data={quickMode ? outlet : outlets}/>
+                                </div>
+                                <br/>
+                                <div className="catchments">
+                                    <H5>{quickMode ? ("Catchment") : ("Catchment(s)")}</H5>
+                                    <DownloadMenu objecttype="catchment"
+                                                  data={quickMode ? catchment : catchments}/>
                                 </div>
 
                             </Panel>
