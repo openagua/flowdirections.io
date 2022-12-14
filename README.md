@@ -2,6 +2,6 @@
 
 [flowdirections.io](https://flowdirections.io) helps delineate catchments using pysheds + HydroSHEDS.
 
-For help using the app, see the [user guide](https://openagua.github.io/flowdirections.io).
+For help using the app, see [docs.flowdirections.io](https://docs.flowdirections.io).
 
 Development notes will be posted here.
