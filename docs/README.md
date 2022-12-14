@@ -24,9 +24,9 @@ Here are some other online tools that you may find useful/interesting.
 
 ## Water-related
 
-* [River Runner](river-runner-global.samlearner.com/) - "Tap to drop a raindrop anywhere in the world and watch where it ends up" - A very nice 3-D river exploration tool!
+* [River Runner](https://river-runner-global.samlearner.com/) - "Tap to drop a raindrop anywhere in the world and watch where it ends up" - A very nice 3-D river exploration tool!
 
 ## Geospatial shapes
 
-* [mapshaper](www.mapshaper.org) - View and simplify geospatial shapes.
-* [geojson.io](www.geojson.io) - View and manipulate GeoJSON files.
+* [mapshaper](https://www.mapshaper.org) - View and simplify geospatial shapes.
+* [geojson.io](https://www.geojson.io) - View and manipulate GeoJSON files.
