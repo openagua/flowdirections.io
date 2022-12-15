@@ -211,6 +211,7 @@ const App = () => {
     const [mapStyle, setMapStyle] = useState(mapStyles[0]);
     const [outlet, setOutlet] = useState(null);
     const [resolution, setResolution] = useState(30);
+    const [removeSinks, setRemoveSinks] = useState(true);
     const [outlets, setOutlets] = useState();
     const [quickMode, setQuickMode] = useState(true);
     const [catchments, setCatchments] = useState(null);
@@ -312,7 +313,7 @@ const App = () => {
         const newOutlet = createOutlet(lon, lat, id);
         if (quickMode) {
             setOutlet(newOutlet);
-            handleQuickDelineate(newOutlet);
+            handleQuickDelineate(newOutlet, removeSinks);
         } else {
             const features = outlets ? [...outlets.features, newOutlet] : [newOutlet];
             setOutlets({
@@ -333,7 +334,7 @@ const App = () => {
         }
         if (quickMode) {
             setOutlet(movedOutlet);
-            handleQuickDelineate(movedOutlet)
+            handleQuickDelineate(movedOutlet, removeSinks)
         } else {
             setOutlets({
                 ...outlets,
@@ -358,9 +359,9 @@ const App = () => {
         console.log('hi!!')
     }
 
-    const handleQuickDelineate = (newOutlet) => {
+    const handleQuickDelineate = (newOutlet, _removeSinks = true) => {
         const [lon, lat] = newOutlet.geometry.coordinates;
-        if (outlet) {
+        if (outlet && _removeSinks === removeSinks) {
             const [_lon, _lat] = outlet.geometry.coordinates;
             if (_lon === lon && _lat === lat) {
                 return;
@@ -368,7 +369,7 @@ const App = () => {
         }
         setWorking(true);
         setCatchment(null);
-        api.get('catchment', {params: {lon, lat, res: resolution}})
+        api.get('catchment', {params: {lon, lat, res: resolution, remove_sinks: _removeSinks}})
             .then(({data}) => {
                 setCatchment(data);
                 originalCatchment.current = data;
@@ -527,6 +528,13 @@ const App = () => {
         setQuickMode(!quickMode);
     }
 
+    const toggleRemoveSinks = () => {
+        setRemoveSinks(!removeSinks);
+        if (quickMode) {
+            outlet && handleQuickDelineate(outlet, !removeSinks);
+        }
+    }
+
     const handleClearWorkspace = () => {
         setOutlet(null);
         setOutlets(null);
@@ -624,6 +632,10 @@ const App = () => {
                                 <FormGroup
                                     helperText={("Quick mode will delineate a single catchment as soon as you click on the map.")}>
                                     <Switch large checked={quickMode} onChange={changeMode} label={("Quick mode")}/>
+                                </FormGroup>
+                                <FormGroup helperText={"Uncheck this to show endorheic basins in the delineation."}>
+                                    <Switch large checked={removeSinks} onChange={toggleRemoveSinks}
+                                            label={("Fill sinks")}/>
                                 </FormGroup>
                                 <div>
                                     <H5>{quickMode ? ("Outlet") : ("Outlets")}</H5>
