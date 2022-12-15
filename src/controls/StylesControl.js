@@ -25,8 +25,7 @@ const StylesControl = ({
     return (
         <MapControl position={position} component={
             <Popover2
-                interactionKind="hover"
-                // isOpen
+                // interactionKind="hover"
                 placement="right-end"
                 content={
                     <div className="map-styles-control">
