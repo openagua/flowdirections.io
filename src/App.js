@@ -4,10 +4,12 @@ import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-load
 import classNames from "classnames";
 import {round, snapToCenter} from "./utils";
 import debounce from "debounce";
+import querystring from 'qs';
 import {
     Button,
     FormGroup,
     H5,
+    Icon,
     Menu,
     MenuItem,
     Navbar,
@@ -15,32 +17,23 @@ import {
     Radio,
     RadioGroup,
     Slider,
+    Spinner,
     Switch,
     Tab,
     Tabs,
     Toaster,
-    Spinner,
-    Icon,
 } from "@blueprintjs/core";
 import {Popover2} from "@blueprintjs/popover2";
-import Map, {
-    GeolocateControl,
-    Source,
-    Layer,
-    NavigationControl,
-    ScaleControl,
-} from 'react-map-gl';
+import Map, {GeolocateControl, Layer, NavigationControl, ScaleControl, Source,} from 'react-map-gl';
 import {HotTable} from '@handsontable/react';
 import FileSaver from 'file-saver';
 import SearchControl from "./controls/SearchControl";
 import StylesControl from "./controls/StylesControl";
-import {OutletMarker, CatchmentSource, ExternalLink, Panel} from "./components";
+import {CatchmentSource, ExternalLink, OutletMarker, Panel} from "./components";
 import MapControl from "./controls/MapControl";
 
 // import shpwrite from './libraries/shp-write';
-
 // STYLES
-
 import 'normalize.css/normalize.css';
 import '@blueprintjs/icons/lib/css/blueprint-icons.css';
 import '@blueprintjs/core/lib/css/blueprint.css';
@@ -235,37 +228,16 @@ const App = () => {
     const [locked, setLocked] = useState(false);
 
     const [initialViewState] = useState(() => {
-        let _initialViewState = {
-            longitude: -116.1,
-            latitude: 37.7,
-            zoom: 5,
-            // bearing: 0,
-            // pitch: 0,
+        const search = document.location.search;
+        const {lat, lon, zoom, bearing, pitch} = search ? querystring.parse(search) : {};
+        return {
+            longitude: Number(lon) || -116.1,
+            latitude: Number(lat) || 37.7,
+            zoom: Number(zoom) || 5,
+            bearing: Number(bearing),
+            pitch: Number(pitch),
         };
-        const parts = document.location.hash.split('=');
-        if (parts.length === 2) {
-            const locs = parts[1].split('/');
-            if (locs.length === 5) {
-                const [latitude, longitude, zoom, bearing, pitch] = locs;
-                _initialViewState = {
-                    longitude: Number(longitude),
-                    latitude: Number(latitude),
-                    zoom: Number(zoom),
-                    bearing: Number(bearing),
-                    pitch: Number(pitch),
-                }
-            }
-        }
-        return _initialViewState;
     })
-
-    // useEffect(() => {
-    //     if (map.current) {
-    //         map.current.on('contextmenu', (e) => {
-    //             console.log('clicked!!!')
-    //         })
-    //     }
-    // }, [map.current])
 
     const redrawMap = () => map.current && map.current.resize();
 
@@ -447,9 +419,15 @@ const App = () => {
         const _zoom = round(zoom, 10);
         const _bearing = round(bearing, 10);
         const _pitch = round(pitch, 10);
-        const newHash = `#map=${_lat}/${_lon}/${_zoom}/${_bearing}/${_pitch}`;
-        const currentHash = document.location.hash;
-        const newLocation = currentHash ? document.location.href.replace(currentHash, newHash) : document.location.href + newHash;
+        const newSearch = '?' + querystring.stringify({
+            lat: _lat,
+            lon: _lon,
+            zoom: _zoom,
+            bearing: _bearing,
+            pitch: _pitch
+        });
+        const currentSearch = document.location.search;
+        const newLocation = currentSearch ? document.location.href.replace(currentSearch, newSearch) : document.location.href + newSearch;
         window.history.replaceState({}, '', newLocation);
     }
 
