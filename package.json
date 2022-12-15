@@ -25,6 +25,7 @@
     "mapbox-gl": "^2.10.0",
     "mapbox-gl-controls": "^2.3.5",
     "process": "^0.11.10",
+    "qs": "^6.11.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-map-gl": "^7.0.19",

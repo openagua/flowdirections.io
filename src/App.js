@@ -4,10 +4,12 @@ import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-load
 import classNames from "classnames";
 import {round, snapToCenter} from "./utils";
 import debounce from "debounce";
+import querystring from 'qs';
 import {
     Button,
     FormGroup,
     H5,
+    Icon,
     Menu,
     MenuItem,
     Navbar,
@@ -15,32 +17,23 @@ import {
     Radio,
     RadioGroup,
     Slider,
+    Spinner,
     Switch,
     Tab,
     Tabs,
     Toaster,
-    Spinner,
-    Icon,
 } from "@blueprintjs/core";
 import {Popover2} from "@blueprintjs/popover2";
-import Map, {
-    GeolocateControl,
-    Source,
-    Layer,
-    NavigationControl,
-    ScaleControl,
-} from 'react-map-gl';
+import Map, {GeolocateControl, Layer, NavigationControl, ScaleControl, Source,} from 'react-map-gl';
 import {HotTable} from '@handsontable/react';
 import FileSaver from 'file-saver';
 import SearchControl from "./controls/SearchControl";
 import StylesControl from "./controls/StylesControl";
-import {OutletMarker, CatchmentSource, ExternalLink, Panel} from "./components";
+import {CatchmentSource, ExternalLink, OutletMarker, Panel} from "./components";
 import MapControl from "./controls/MapControl";
 
 // import shpwrite from './libraries/shp-write';
-
 // STYLES
-
 import 'normalize.css/normalize.css';
 import '@blueprintjs/icons/lib/css/blueprint-icons.css';
 import '@blueprintjs/core/lib/css/blueprint.css';
@@ -51,7 +44,7 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import 'handsontable/dist/handsontable.full.min.css';
 
 import './App.scss';
-import {DARK} from "@blueprintjs/core/lib/esnext/common/classes";
+import {BUTTON, DARK, INTENT_WARNING} from "@blueprintjs/core/lib/esnext/common/classes";
 
 const api = axios.create({
     baseURL: process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8000/' : process.env.REACT_APP_API_ENDPOINT,
@@ -59,6 +52,8 @@ const api = axios.create({
     // timeout: 1000,
     // headers: {'X-Custom-Header': 'foobar'}
 });
+
+const COORD_PLACES = 1e6;
 
 const mapStyles = [
     {
@@ -216,6 +211,7 @@ const App = () => {
     const [mapStyle, setMapStyle] = useState(mapStyles[0]);
     const [outlet, setOutlet] = useState(null);
     const [resolution, setResolution] = useState(30);
+    const [removeSinks, setRemoveSinks] = useState(true);
     const [outlets, setOutlets] = useState();
     const [quickMode, setQuickMode] = useState(true);
     const [catchments, setCatchments] = useState(null);
@@ -233,37 +229,16 @@ const App = () => {
     const [locked, setLocked] = useState(false);
 
     const [initialViewState] = useState(() => {
-        let _initialViewState = {
-            longitude: -116.1,
-            latitude: 37.7,
-            zoom: 5,
-            // bearing: 0,
-            // pitch: 0,
+        const search = document.location.search;
+        const {lat, lon, zoom, bearing, pitch} = search ? querystring.parse(search) : {};
+        return {
+            longitude: Number(lon) || -116.1,
+            latitude: Number(lat) || 37.7,
+            zoom: Number(zoom) || 5,
+            bearing: Number(bearing),
+            pitch: Number(pitch),
         };
-        const parts = document.location.hash.split('=');
-        if (parts.length === 2) {
-            const locs = parts[1].split('/');
-            if (locs.length === 5) {
-                const [latitude, longitude, zoom, bearing, pitch] = locs;
-                _initialViewState = {
-                    longitude: Number(longitude),
-                    latitude: Number(latitude),
-                    zoom: Number(zoom),
-                    bearing: Number(bearing),
-                    pitch: Number(pitch),
-                }
-            }
-        }
-        return _initialViewState;
     })
-
-    // useEffect(() => {
-    //     if (map.current) {
-    //         map.current.on('contextmenu', (e) => {
-    //             console.log('clicked!!!')
-    //         })
-    //     }
-    // }, [map.current])
 
     const redrawMap = () => map.current && map.current.resize();
 
@@ -283,8 +258,7 @@ const App = () => {
     useEffect(() => {
         setStreamlinesTiles(null);
         if (showStreamlines) {
-            const dataset = `WWF/HydroSHEDS/${resolution}ACC`;
-            api.get('ee_tile', {params: {dataset, threshold: streamlinesThreshold}})
+            api.get('streamlines_raster', {params: {resolution, threshold: streamlinesThreshold}})
                 .then(resp => {
                     setStreamlinesTiles(resp.data);
                 })
@@ -326,17 +300,20 @@ const App = () => {
         }
     };
 
+    const roundCoord = (coord) => {
+        return round(snap ? snapToCenter(coord, resolution) : coord, COORD_PLACES)
+    }
+
     const handleAddOutlet = ({lngLat}) => {
         const {lng: _lon, lat: _lat} = lngLat;
         const id = outlets ? outlets.features.length + 1 : 1;
 
-        // =FLOOR(A5,B$2)+B$2/2
-        const lon = snap ? snapToCenter(_lon, resolution) : _lon;
-        const lat = snap ? snapToCenter(_lat, resolution) : _lat;
+        const lon = roundCoord(_lon);
+        const lat = roundCoord(_lat);
         const newOutlet = createOutlet(lon, lat, id);
         if (quickMode) {
             setOutlet(newOutlet);
-            handleQuickDelineate(newOutlet);
+            handleQuickDelineate(newOutlet, removeSinks);
         } else {
             const features = outlets ? [...outlets.features, newOutlet] : [newOutlet];
             setOutlets({
@@ -352,15 +329,12 @@ const App = () => {
             ...updated,
             geometry: {
                 ...updated.geometry,
-                coordinates: [
-                    snap ? snapToCenter(lon, resolution) : lon,
-                    snap ? snapToCenter(lat, resolution) : lat,
-                ]
+                coordinates: [roundCoord(lon), roundCoord(lat)]
             }
         }
         if (quickMode) {
             setOutlet(movedOutlet);
-            handleQuickDelineate(movedOutlet)
+            handleQuickDelineate(movedOutlet, removeSinks)
         } else {
             setOutlets({
                 ...outlets,
@@ -385,9 +359,9 @@ const App = () => {
         console.log('hi!!')
     }
 
-    const handleQuickDelineate = (newOutlet) => {
+    const handleQuickDelineate = (newOutlet, _removeSinks = true) => {
         const [lon, lat] = newOutlet.geometry.coordinates;
-        if (outlet) {
+        if (outlet && _removeSinks === removeSinks) {
             const [_lon, _lat] = outlet.geometry.coordinates;
             if (_lon === lon && _lat === lat) {
                 return;
@@ -395,7 +369,7 @@ const App = () => {
         }
         setWorking(true);
         setCatchment(null);
-        api.get('catchment', {params: {lon, lat, res: resolution}})
+        api.get('catchment', {params: {lon, lat, res: resolution, remove_sinks: _removeSinks}})
             .then(({data}) => {
                 setCatchment(data);
                 originalCatchment.current = data;
@@ -446,9 +420,15 @@ const App = () => {
         const _zoom = round(zoom, 10);
         const _bearing = round(bearing, 10);
         const _pitch = round(pitch, 10);
-        const newHash = `#map=${_lat}/${_lon}/${_zoom}/${_bearing}/${_pitch}`;
-        const currentHash = document.location.hash;
-        const newLocation = currentHash ? document.location.href.replace(currentHash, newHash) : document.location.href + newHash;
+        const newSearch = '?' + querystring.stringify({
+            lat: _lat,
+            lon: _lon,
+            zoom: _zoom,
+            bearing: _bearing,
+            pitch: _pitch
+        });
+        const currentSearch = document.location.search;
+        const newLocation = currentSearch ? document.location.href.replace(currentSearch, newSearch) : document.location.href + newSearch;
         window.history.replaceState({}, '', newLocation);
     }
 
@@ -548,47 +528,12 @@ const App = () => {
         setQuickMode(!quickMode);
     }
 
-    // const handleDownload = (e) => {
-    //     const {objecttype, filetype} = e.currentTarget.dataset;
-    //     let shape;
-    //     switch (objecttype) {
-    //         case "outlet":
-    //             shape = quickMode ? outlet : outlets;
-    //             break;
-    //         case "catchment":
-    //             shape = quickMode ? catchment : catchments;
-    //             break;
-    //         default:
-    //             return;
-    //     }
-    //     const filenameBase = `${objecttype}${quickMode ? "" : "s"}`
-    //     switch (filetype) {
-    //         case "geojson":
-    //             const blob = new Blob([JSON.stringify(shape, null, 2)], {type: "text/plain;charset=utf-8"});
-    //             FileSaver.saveAs(blob, `${filenameBase}.json`);
-    //             break;
-    //         case "shapefile":
-    //             const data = shape.type === 'FeatureCollection' ? shape : {
-    //                 type: 'FeatureCollection',
-    //                 features: [shape]
-    //             };
-    //             const options = {
-    //                 folder: filenameBase,
-    //                 type: 'blob',
-    //                 types: {
-    //                     point: filenameBase,
-    //                     polygon: filenameBase,
-    //                     line: filenameBase
-    //                 }
-    //             }
-    //             shpwrite.zip(data, options).then(blob => {
-    //                 FileSaver.saveAs(blob, `${filenameBase}.zip`);
-    //             });
-    //             break;
-    //         default:
-    //             return;
-    //     }
-    // }
+    const toggleRemoveSinks = () => {
+        setRemoveSinks(!removeSinks);
+        if (quickMode) {
+            outlet && handleQuickDelineate(outlet, !removeSinks);
+        }
+    }
 
     const handleClearWorkspace = () => {
         setOutlet(null);
@@ -614,8 +559,8 @@ const App = () => {
                     {/*        onClick={() => setDark(!dark)}/>*/}
                 </NavbarGroup>
                 <NavbarGroup align="right">
-                    <a href={process.env.REACT_APP_DONATE_LINK} target="_blank" rel="noreferrer"
-                       style={{marginRight: 20}}>Donate</a>
+                    <a className={classNames(BUTTON, INTENT_WARNING)} href={process.env.REACT_APP_DONATE_LINK}
+                       target="_blank" rel="noreferrer">Donate</a>
                     {/*<a href="https://www.github.com/openagua/flowdirections.io"*/}
                     {/*   target="_blank" style={{display: "flex"}}><GitHubIcon/></a>*/}
                 </NavbarGroup>
@@ -678,7 +623,7 @@ const App = () => {
                     </Map>
                 </div>
                 <div className="map-sidebar">
-                    <Tabs id="sidebar-tabs" large>
+                    <Tabs id="sidebar-tabs" large renderActiveTabPanelOnly>
                         <Tab id="home" title="Home" panel={
                             <Panel>
                                 <Button fill large icon="eraser" onClick={handleClearWorkspace}>
@@ -688,46 +633,42 @@ const App = () => {
                                     helperText={("Quick mode will delineate a single catchment as soon as you click on the map.")}>
                                     <Switch large checked={quickMode} onChange={changeMode} label={("Quick mode")}/>
                                 </FormGroup>
-                                {!quickMode && <div>
-                                    <div>
-                                        {outlets && outlets.features.length ?
-                                            <HotTable
-                                                data={outlets.features.map(o => {
-                                                    const coords = o.geometry.coordinates;
-                                                    return ([coords[0], coords[1]])
-                                                })}
-                                                rowHeaders={true}
-                                                colHeaders={["Lon", "Lat"]}
-                                                height="auto"
-                                                licenseKey="non-commercial-and-evaluation" // for non-commercial use only
-                                            /> : <div>
-                                                Add multiple outlets by clicking on the map.
-                                            </div>}
-                                    </div>
-                                    {outlets && <div style={{marginTop: 10, marginBottom: 10}}>
-                                        <Button intent="primary" onClick={handleDelineateMany}>{("Delineate")}</Button>
-                                    </div>}
-                                </div>}
-                                <div className="bottom">
-
-
-                                    {/*<FormLabel>Simplify</FormLabel>*/}
-                                    {/*<Slider defaultValue={0} step={simplifyMax/10} min={0} max={simplifyMax}*/}
-                                    {/*        onChange={handleChangeSimplification}/>*/}
-
-                                    <div className="download-area">
+                                <FormGroup helperText={"Uncheck this to show endorheic basins in the delineation."}>
+                                    <Switch large checked={removeSinks} onChange={toggleRemoveSinks}
+                                            label={("Fill sinks")}/>
+                                </FormGroup>
+                                <div>
+                                    <H5>{quickMode ? ("Outlet") : ("Outlets")}</H5>
+                                    {!quickMode &&
                                         <div>
-                                            <H5>{quickMode ? ("Outlet") : ("Outlet(s)")}</H5>
-                                            <DownloadMenu objecttype="outlet"
-                                                          data={quickMode ? outlet : outlets}/>
-                                        </div>
-                                        <br/>
-                                        <div>
-                                            <H5>{quickMode ? ("Catchment") : ("Catchment(s)")}</H5>
-                                            <DownloadMenu objecttype="catchment"
-                                                          data={quickMode ? catchment : catchments}/>
-                                        </div>
+                                            {outlets && outlets.features.length ?
+                                                <HotTable
+                                                    data={outlets.features.map(o => {
+                                                        const coords = o.geometry.coordinates;
+                                                        return ([coords[0], coords[1]])
+                                                    })}
+                                                    rowHeaders={true}
+                                                    colHeaders={["Lon", "Lat"]}
+                                                    width="320px"
+                                                    height="auto"
+                                                    licenseKey="non-commercial-and-evaluation" // for non-commercial use only
+                                                /> : <div>
+                                                    Add multiple outlets by clicking on the map.
+                                                </div>}
+                                        </div>}
+                                    <div style={{marginTop: 10, marginBottom: 10, display: "flex"}}>
+                                        {!quickMode &&
+                                            <Button intent="primary" disabled={!outlets} style={{marginRight: 5}}
+                                                    onClick={handleDelineateMany}>{("Delineate")}</Button>}
+                                        <DownloadMenu objecttype="outlet"
+                                                      data={quickMode ? outlet : outlets}/>
                                     </div>
+                                </div>
+                                <br/>
+                                <div className="catchments">
+                                    <H5>{quickMode ? ("Catchment") : ("Catchment(s)")}</H5>
+                                    <DownloadMenu objecttype="catchment"
+                                                  data={quickMode ? catchment : catchments}/>
                                 </div>
 
                             </Panel>
