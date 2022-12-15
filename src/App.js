@@ -51,7 +51,7 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import 'handsontable/dist/handsontable.full.min.css';
 
 import './App.scss';
-import {DARK} from "@blueprintjs/core/lib/esnext/common/classes";
+import {BUTTON, DARK, INTENT_WARNING} from "@blueprintjs/core/lib/esnext/common/classes";
 
 const api = axios.create({
     baseURL: process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8000/' : process.env.REACT_APP_API_ENDPOINT,
@@ -59,6 +59,8 @@ const api = axios.create({
     // timeout: 1000,
     // headers: {'X-Custom-Header': 'foobar'}
 });
+
+const COORD_PLACES = 1e6;
 
 const mapStyles = [
     {
@@ -283,8 +285,7 @@ const App = () => {
     useEffect(() => {
         setStreamlinesTiles(null);
         if (showStreamlines) {
-            const dataset = `WWF/HydroSHEDS/${resolution}ACC`;
-            api.get('ee_tile', {params: {dataset, threshold: streamlinesThreshold}})
+            api.get('streamlines_raster', {params: {resolution, threshold: streamlinesThreshold}})
                 .then(resp => {
                     setStreamlinesTiles(resp.data);
                 })
@@ -326,13 +327,16 @@ const App = () => {
         }
     };
 
+    const roundCoord = (coord) => {
+        return round(snap ? snapToCenter(coord, resolution) : coord, COORD_PLACES)
+    }
+
     const handleAddOutlet = ({lngLat}) => {
         const {lng: _lon, lat: _lat} = lngLat;
         const id = outlets ? outlets.features.length + 1 : 1;
 
-        // =FLOOR(A5,B$2)+B$2/2
-        const lon = snap ? snapToCenter(_lon, resolution) : _lon;
-        const lat = snap ? snapToCenter(_lat, resolution) : _lat;
+        const lon = roundCoord(_lon);
+        const lat = roundCoord(_lat);
         const newOutlet = createOutlet(lon, lat, id);
         if (quickMode) {
             setOutlet(newOutlet);
@@ -352,10 +356,7 @@ const App = () => {
             ...updated,
             geometry: {
                 ...updated.geometry,
-                coordinates: [
-                    snap ? snapToCenter(lon, resolution) : lon,
-                    snap ? snapToCenter(lat, resolution) : lat,
-                ]
+                coordinates: [roundCoord(lon), roundCoord(lat)]
             }
         }
         if (quickMode) {
@@ -572,8 +573,8 @@ const App = () => {
                     {/*        onClick={() => setDark(!dark)}/>*/}
                 </NavbarGroup>
                 <NavbarGroup align="right">
-                    <a href={process.env.REACT_APP_DONATE_LINK} target="_blank" rel="noreferrer"
-                       style={{marginRight: 20}}>Donate</a>
+                    <a className={classNames(BUTTON, INTENT_WARNING)} href={process.env.REACT_APP_DONATE_LINK}
+                       target="_blank" rel="noreferrer">Donate</a>
                     {/*<a href="https://www.github.com/openagua/flowdirections.io"*/}
                     {/*   target="_blank" style={{display: "flex"}}><GitHubIcon/></a>*/}
                 </NavbarGroup>
@@ -636,7 +637,7 @@ const App = () => {
                     </Map>
                 </div>
                 <div className="map-sidebar">
-                    <Tabs id="sidebar-tabs" large>
+                    <Tabs id="sidebar-tabs" large renderActiveTabPanelOnly>
                         <Tab id="home" title="Home" panel={
                             <Panel>
                                 <Button fill large icon="eraser" onClick={handleClearWorkspace}>
@@ -647,7 +648,7 @@ const App = () => {
                                     <Switch large checked={quickMode} onChange={changeMode} label={("Quick mode")}/>
                                 </FormGroup>
                                 <div>
-                                    <H5>{quickMode ? ("Outlet") : ("Outlet(s)")}</H5>
+                                    <H5>{quickMode ? ("Outlet") : ("Outlets")}</H5>
                                     {!quickMode &&
                                         <div>
                                             {outlets && outlets.features.length ?
@@ -658,6 +659,7 @@ const App = () => {
                                                     })}
                                                     rowHeaders={true}
                                                     colHeaders={["Lon", "Lat"]}
+                                                    width="320px"
                                                     height="auto"
                                                     licenseKey="non-commercial-and-evaluation" // for non-commercial use only
                                                 /> : <div>
@@ -665,8 +667,9 @@ const App = () => {
                                                 </div>}
                                         </div>}
                                     <div style={{marginTop: 10, marginBottom: 10, display: "flex"}}>
-                                        {!quickMode && <Button intent="primary" disabled={!outlets} style={{marginRight: 5}}
-                                                            onClick={handleDelineateMany}>{("Delineate")}</Button>}
+                                        {!quickMode &&
+                                            <Button intent="primary" disabled={!outlets} style={{marginRight: 5}}
+                                                    onClick={handleDelineateMany}>{("Delineate")}</Button>}
                                         <DownloadMenu objecttype="outlet"
                                                       data={quickMode ? outlet : outlets}/>
                                     </div>
