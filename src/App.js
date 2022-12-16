@@ -282,6 +282,7 @@ const App = () => {
             })
         })
         map.current.fitBounds([bounds._sw, bounds._ne], {
+            duration: 2000,
             padding: 30
         });
     }
