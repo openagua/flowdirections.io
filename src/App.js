@@ -203,7 +203,7 @@ const App = () => {
     const originalCatchment = useRef();
     // const resizer = useRef();
 
-    const smallScreen = window.screen.availWidth < 700;
+    const smallScreen = window.screen.availWidth <= 768;
 
     const [sidebarIsClosed, setSidebarIsClosed] = useState(smallScreen);
     const [projection, setProjection] = useState("mercator");
@@ -551,8 +551,8 @@ const App = () => {
             </div>
             <Navbar>
                 <NavbarGroup align="left">
-                    {smallScreen ? null :
-                        <Navbar.Heading><a href={document.location.host}>{document.location.host}</a></Navbar.Heading>}
+                    <Navbar.Heading className="navbar-heading"><a
+                        href={document.location.host}>{document.location.host}</a></Navbar.Heading>
                     <Switch large label={"Lock editing"} style={{margin: 0, marginLeft: 10}} checked={locked}
                             onChange={handleChangeLocked}/>
                     {/*<Button minimal icon={dark ? "flash" : "moon"} style={{marginLeft: 10}}*/}
