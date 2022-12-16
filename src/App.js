@@ -225,7 +225,7 @@ const App = () => {
     const [streamlinesOpacity, setStreamlinesOpacity] = useState(50);
     // const [simplification, setSimplification] = useState(0);
     const [streamlinesTiles, setStreamlinesTiles] = useState();
-    const [autoZoom, setAutoZoom] = useState(false);
+    const [autoZoom, setAutoZoom] = useState(true);
     const [locked, setLocked] = useState(false);
 
     const [initialViewState] = useState(() => {
