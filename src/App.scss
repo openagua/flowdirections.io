@@ -25,6 +25,7 @@ button {
 
 .mapboxgl-ctrl-group {
   button {
+    color: $black;
     .bp4-dark & {
       background: $dark-gray5;
     }
