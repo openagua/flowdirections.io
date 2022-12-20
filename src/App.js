@@ -230,7 +230,7 @@ const App = () => {
 
     const [initialViewState] = useState(() => {
         const search = document.location.search;
-        const {lat, lon, zoom, bearing, pitch} = search ? querystring.parse(search) : {};
+        const {lat, lon, zoom, bearing, pitch} = search ? querystring.parse(search.slice(1)) : {};
         return {
             longitude: Number(lon) || -116.1,
             latitude: Number(lat) || 37.7,
@@ -310,9 +310,33 @@ const App = () => {
         return round(snap ? snapToCenter(coord) : coord, COORD_PLACES)
     }
 
+    const shareCell = (f1, f2) => {
+        let isShared = false;
+        const [lon1, lat1] = f1.geometry.coordinates;
+        const [lon2, lat2] = f2.geometry.coordinates;
+        if (snapToCenter(lon1) === snapToCenter(lon2) && snapToCenter(lat1) === snapToCenter(lat2)) {
+            isShared = true;
+        }
+        return isShared;
+    }
+
+    const checkCellIsOccupied = (newOutlet) => {
+        let isOccupied = false;
+        if (quickMode && outlet) {
+            isOccupied = shareCell(outlet, newOutlet);
+        } else if (!quickMode && outlets) {
+            outlets.features.forEach(o => {
+                if (shareCell(o, newOutlet)) {
+                    isOccupied = true;
+                }
+            })
+        }
+        return isOccupied;
+    }
+
     const handleAddOutlet = ({lngLat}) => {
         const {lng: _lon, lat: _lat} = lngLat;
-        const id = outlets ? outlets.features.length + 1 : 1;
+        const id = Date.now();
 
         const lon = roundCoord(_lon);
         const lat = roundCoord(_lat);
@@ -321,7 +345,17 @@ const App = () => {
             setOutlet(newOutlet);
             handleQuickDelineate(newOutlet, removeSinks);
         } else {
-            const features = outlets ? [...outlets.features, newOutlet] : [newOutlet];
+            let features;
+            if (outlets) {
+                const currentOutlet = outlets.features.find(o => shareCell(o, newOutlet))
+                if (currentOutlet) {
+                    features = outlets.features.map(f => f.properties.id === currentOutlet.properties.id ? newOutlet : f);
+                } else {
+                    features = [...outlets.features, newOutlet];
+                }
+            } else {
+                features = [newOutlet]
+            }
             setOutlets({
                 type: 'FeatureCollection',
                 features
@@ -340,19 +374,20 @@ const App = () => {
         }
         if (quickMode) {
             setOutlet(movedOutlet);
-            let shouldReDelineate = true;
-            if (outlet) {
-                const [_lon, _lat] = outlet.geometry.coordinates;
-                if (snapToCenter(lon) === snapToCenter(_lon) && snapToCenter(lat) === snapToCenter(_lat)) {
-                    shouldReDelineate = false;
-                }
-            }
-            shouldReDelineate && handleQuickDelineate(movedOutlet, removeSinks)
+            handleQuickDelineate(movedOutlet, removeSinks);
         } else {
-            setOutlets({
-                ...outlets,
-                features: outlets.features.map(f => f.properties.id === movedOutlet.properties.id ? movedOutlet : f)
-            });
+            if (outlets.features.find(o => o.properties.id !== movedOutlet.properties.id && shareCell(o, movedOutlet))) {
+                notify.danger('Only one outlet per grid cell allowed.');
+                setOutlets({
+                    ...outlets,
+                    features: outlets.features.map(o => o)
+                });
+            } else {
+                setOutlets({
+                    ...outlets,
+                    features: outlets.features.map(f => f.properties.id === movedOutlet.properties.id ? movedOutlet : f)
+                });
+            }
         }
     }
 
@@ -373,6 +408,9 @@ const App = () => {
     }
 
     const handleQuickDelineate = (newOutlet, _removeSinks = true) => {
+        if (checkCellIsOccupied(newOutlet)) {
+            return;
+        }
         const [lon, lat] = newOutlet.geometry.coordinates;
         if (outlet && _removeSinks === removeSinks) {
             const [_lon, _lat] = outlet.geometry.coordinates;
@@ -429,8 +467,8 @@ const App = () => {
     const handleMoveEnd = (e) => {
         setCursor(cursor.current);
         const {latitude, longitude, zoom, bearing, pitch} = e.viewState;
-        const _lat = round(latitude, 1000);
-        const _lon = round(longitude, 1000);
+        const _lat = round(latitude, 1e3);
+        const _lon = round(longitude, 1e3);
         const _zoom = round(zoom, 10);
         const _bearing = round(bearing, 10);
         const _pitch = round(pitch, 10);
