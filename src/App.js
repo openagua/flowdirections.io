@@ -553,7 +553,7 @@ const App = () => {
             <Navbar>
                 <NavbarGroup align="left">
                     <Navbar.Heading className="navbar-heading"><a
-                        href={document.location.host}>{document.location.host}</a></Navbar.Heading>
+                        href={document.location.origin}>{document.location.host}</a></Navbar.Heading>
                     <Switch large label={"Lock editing"} style={{margin: 0, marginLeft: 10}} checked={locked}
                             onChange={handleChangeLocked}/>
                     {/*<Button minimal icon={dark ? "flash" : "moon"} style={{marginLeft: 10}}*/}
