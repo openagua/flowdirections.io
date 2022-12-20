@@ -392,9 +392,10 @@ const App = () => {
             setCatchments(data);
             originalCatchment.current = data;
             setWorking(false);
-            notify.success("Success!");
 
             autoZoom && flyTo(data);
+        }).catch(() => {
+            notify.danger('Uh-oh! Something went wrong...')
         });
     }
 
