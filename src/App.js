@@ -395,7 +395,7 @@ const App = () => {
 
             autoZoom && flyTo(data);
         }).catch(() => {
-            notify.danger('Uh-oh! Something went wrong...')
+            notify.danger('Uh-oh! Something went wrong.')
         });
     }
 
