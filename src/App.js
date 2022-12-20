@@ -2,7 +2,7 @@ import {useEffect, useRef, useState} from "react";
 import axios from "axios";
 import mapboxgl from '!mapbox-gl'; // eslint-disable-line import/no-webpack-loader-syntax
 import classNames from "classnames";
-import {round, snapToCenter} from "./utils";
+import {round} from "./utils";
 import debounce from "debounce";
 import querystring from 'qs';
 import {
@@ -301,8 +301,13 @@ const App = () => {
         }
     };
 
+    const snapToCenter = (n) => {
+        const r = resolution / 60 / 60;
+        return Math.floor(n / r) * r + r / 2;
+    }
+
     const roundCoord = (coord) => {
-        return round(snap ? snapToCenter(coord, resolution) : coord, COORD_PLACES)
+        return round(snap ? snapToCenter(coord) : coord, COORD_PLACES)
     }
 
     const handleAddOutlet = ({lngLat}) => {
@@ -335,7 +340,14 @@ const App = () => {
         }
         if (quickMode) {
             setOutlet(movedOutlet);
-            handleQuickDelineate(movedOutlet, removeSinks)
+            let shouldReDelineate = true;
+            if (outlet) {
+                const [_lon, _lat] = outlet.geometry.coordinates;
+                if (snapToCenter(lon) === snapToCenter(_lon) && snapToCenter(lat) === snapToCenter(_lat)) {
+                    shouldReDelineate = false;
+                }
+            }
+            shouldReDelineate && handleQuickDelineate(movedOutlet, removeSinks)
         } else {
             setOutlets({
                 ...outlets,
