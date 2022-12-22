@@ -26,6 +26,7 @@ button {
 .mapboxgl-ctrl-group {
   button {
     color: $black;
+
     .bp4-dark & {
       background: $dark-gray5;
     }
@@ -191,8 +192,37 @@ div, span {
   }
 }
 
-@media (max-width: $responsive-threshold-small) {
-  .navbar-heading {
-    display: none;
+.bp4-navbar {
+  padding-left: 0;
+}
+
+.bp4-navbar-heading {
+  height: 100%;
+}
+
+.navbar-heading {
+  a {
+    padding: 10px;
+    display: flex;
+    height: 100%;
+    align-items: center;
+
+    img {
+      height: 30px;
+      width: 30px;
+      margin-right: 5px;
+    }
+
+    span {
+      font-size: 20px;
+      color: #00bbff;
+      @media (max-width: $responsive-threshold-small) {
+        display: none;
+      }
+    }
+
+    &:hover {
+      text-decoration: none;
+    }
   }
 }
