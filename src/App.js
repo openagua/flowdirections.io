@@ -46,8 +46,15 @@ import 'handsontable/dist/handsontable.full.min.css';
 import './App.scss';
 import {BUTTON, DARK, INTENT_WARNING} from "@blueprintjs/core/lib/esnext/common/classes";
 
+const {
+    NODE_ENV,
+    REACT_APP_DONATE_LINK: DONATE_LINK,
+    REACT_APP_API_ENDPOINT: API_ENDPOINT,
+    REACT_APP_MAPBOX_ACCESS_TOKEN: MAPBOX_ACCESS_TOKEN,
+} = process.env;
+
 const api = axios.create({
-    baseURL: process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8000/' : process.env.REACT_APP_API_ENDPOINT,
+    baseURL: NODE_ENV === 'development' ? 'http://127.0.0.1:8000/' : API_ENDPOINT,
     withCredentials: false,
     // timeout: 1000,
     // headers: {'X-Custom-Header': 'foobar'}
@@ -85,8 +92,6 @@ const mapStyles = [
 
 // const FILETYPES = ['GeoJSON', 'Shapefile'];
 const FILETYPES = ['GeoJSON'];
-
-const mapboxAccessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 
 const createOutlet = (lon, lat, id) => {
     return (
@@ -257,13 +262,11 @@ const App = () => {
 
     useEffect(() => {
         setStreamlinesTiles(null);
-        if (showStreamlines) {
-            api.get('streamlines_raster', {params: {resolution, threshold: streamlinesThreshold}})
-                .then(resp => {
-                    setStreamlinesTiles(resp.data);
-                })
-        }
-    }, [resolution, showStreamlines, streamlinesThreshold]);
+        api.get('streamlines_raster', {params: {resolution, threshold: streamlinesThreshold}})
+            .then(resp => {
+                setStreamlinesTiles(resp.data);
+            })
+    }, [resolution, streamlinesThreshold]);
 
     const toggleStreamlines = () => {
         setShowStreamlines(!showStreamlines);
@@ -605,7 +608,7 @@ const App = () => {
                 <NavbarGroup align="left">
                     <Navbar.Heading className="navbar-heading">
                         <a href={document.location.origin}>
-                            <img src="/logo.png"/><span>{document.location.host}</span></a>
+                            <img src="/logo.png" alt="logo"/><span>{document.location.host}</span></a>
                     </Navbar.Heading>
                     <Switch large label={"Lock editing"} style={{margin: 0, marginLeft: 10}} checked={locked}
                             onChange={handleChangeLocked}/>
@@ -613,8 +616,8 @@ const App = () => {
                     {/*        onClick={() => setDark(!dark)}/>*/}
                 </NavbarGroup>
                 <NavbarGroup align="right">
-                    <a className={classNames(BUTTON, INTENT_WARNING)} href={process.env.REACT_APP_DONATE_LINK}
-                       target="_blank" rel="noreferrer">Donate</a>
+                    {DONATE_LINK && <a className={classNames(BUTTON, INTENT_WARNING)} href={DONATE_LINK}
+                                       target="_blank" rel="noreferrer">Donate</a>}
                     {/*<a href="https://www.github.com/openagua/flowdirections.io"*/}
                     {/*   target="_blank" style={{display: "flex"}}><GitHubIcon/></a>*/}
                 </NavbarGroup>
@@ -631,10 +634,10 @@ const App = () => {
                         onMoveEnd={handleMoveEnd}
                         onMoveStart={handleMoveStart}
                         mapStyle={mapStyle.url}
-                        mapboxAccessToken={mapboxAccessToken}
+                        mapboxAccessToken={MAPBOX_ACCESS_TOKEN}
                         projection={projection}
                     >
-                        <SearchControl accessToken={mapboxAccessToken} position="top-left"/>
+                        <SearchControl accessToken={MAPBOX_ACCESS_TOKEN} position="top-left"/>
                         <MapControl position="top-right" component={
                             <button onClick={() => setSidebarIsClosed(!sidebarIsClosed)}><Icon icon="menu"/>
                             </button>
@@ -656,7 +659,7 @@ const App = () => {
                                        onChangeTerrain={toggleShowTerrain}
                                        initialSelected={mapStyle.id}/>
                         <ScaleControl position="bottom-right"/>
-                        {streamlinesTiles &&
+                        {streamlinesTiles && showStreamlines &&
                             <Source key={streamlinesTiles} id="streamlines-raster" type="raster"
                                     tiles={[streamlinesTiles]}>
                                 <Layer
@@ -666,14 +669,14 @@ const App = () => {
                                 />
                             </Source>}
                         <CatchmentSource data={quickMode ? catchment : catchments}/>
-                        {quickMode && outlet &&
+                        {quickMode ? outlet &&
                             <OutletMarker id="outlet" outlet={outlet} draggable={!locked}
                                           onContextMenu={handleShowContextMenu}
-                                          onDragEnd={handleMoveOutlet} onDelete={handleDeleteOutlet}/>}
-                        {!quickMode && outlets && outlets.features.map((o, i) =>
-                            <OutletMarker id="outlet" key={o.properties.id} outlet={o} draggable={!locked}
-                                          index={i} onContextMenu={handleShowContextMenu} onDelete={handleDeleteOutlet}
-                                          onDragEnd={handleMoveOutlet}/>)}
+                                          onDragEnd={handleMoveOutlet} onDelete={handleDeleteOutlet}/> :
+                            outlets && outlets.features.map((o, i) =>
+                                <OutletMarker id="outlet" key={o.properties.id} outlet={o} draggable={!locked}
+                                              index={i} onContextMenu={handleShowContextMenu} onDelete={handleDeleteOutlet}
+                                              onDragEnd={handleMoveOutlet}/>)}
                     </Map>
                 </div>
                 <div className="map-sidebar">
