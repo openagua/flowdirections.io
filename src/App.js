@@ -732,10 +732,10 @@ const App = () => {
                         }/>
                         <Tab id="settings" title={("Settings")} panel={
                             <Panel>
-                                <RadioGroup label={("Resolution (arc seconds)")} large inline
-                                            selectedValue={resolution} onChange={handleChangeResolution}>
-                                    {resolutions.map(res => <Radio key={res} label={`${res}"`} value={res}/>)}
-                                </RadioGroup>
+                                {/*<RadioGroup label={("Resolution (arc seconds)")} large inline*/}
+                                {/*            selectedValue={resolution} onChange={handleChangeResolution}>*/}
+                                {/*    {resolutions.map(res => <Radio key={res} label={`${res}"`} value={res}/>)}*/}
+                                {/*</RadioGroup>*/}
 
                                 <FormGroup
                                     label={<Switch large checked={showStreamlines} onChange={toggleStreamlines}
