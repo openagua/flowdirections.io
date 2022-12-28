@@ -7,21 +7,23 @@ const CatchmentSource = ({data}) => {
         return null;
     }
 
+    const fillColor = '#4E3FC8';
+
     return (
         <Source id={sourceId} type="geojson" data={data}>
             <Layer
                 id="catchments-fill"
                 type="fill"
                 paint={{
-                    'fill-color': '#4E3FC8',
-                    'fill-opacity': 0.5,
+                    'fill-color': fillColor,
+                    'fill-opacity': 0.25,
                 }}
             />
             <Layer
                 id="catchments-outline"
                 type="line"
                 paint={{
-                    'line-color': '#4E3FC8',
+                    'line-color': fillColor,
                     'line-width': 3
                 }}
             />
