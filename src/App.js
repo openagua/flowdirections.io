@@ -51,13 +51,14 @@ const {
     REACT_APP_DONATE_LINK: DONATE_LINK,
     REACT_APP_API_ENDPOINT: API_ENDPOINT,
     REACT_APP_MAPBOX_ACCESS_TOKEN: MAPBOX_ACCESS_TOKEN,
+    REACT_APP_API_KEY: API_KEY
 } = process.env;
 
 const api = axios.create({
     baseURL: NODE_ENV === 'development' ? 'http://127.0.0.1:8000/' : API_ENDPOINT,
     withCredentials: false,
     // timeout: 1000,
-    // headers: {'X-Custom-Header': 'foobar'}
+    headers: {'x-api-key': API_KEY}
 });
 
 const COORD_PLACES = 1e6;
@@ -262,7 +263,7 @@ const App = () => {
 
     useEffect(() => {
         setStreamlinesTiles(null);
-        api.get('streamlines_raster', {params: {resolution, threshold: streamlinesThreshold}})
+        api.get('tiles/streamlines', {params: {resolution, threshold: streamlinesThreshold}})
             .then(resp => {
                 setStreamlinesTiles(resp.data);
             })
