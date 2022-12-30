@@ -586,7 +586,7 @@ const App = () => {
                 <NavbarGroup align="left">
                     <Navbar.Heading className="navbar-heading">
                         <a href={document.location.origin}>
-                            <img src="/logo.png" alt="logo"/><span>{document.location.host}</span></a>
+                            <img src="/logo.svg" alt="logo"/><span>{document.location.host}</span></a>
                     </Navbar.Heading>
                     <Switch large label={"Lock editing"} style={{margin: 0, marginLeft: 10}} checked={locked}
                             onChange={handleChangeLocked}/>

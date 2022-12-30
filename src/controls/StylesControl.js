@@ -36,7 +36,7 @@ const StylesControl = ({
                                             className={isSelected ? "selected" : null}
                                             minimal outlined
                                             onClick={handleClick}>
-                                        <img alt={mapStyle.label} src={`/images/tiles/${imgSrc}`}/>
+                                        <img alt={mapStyle.label} src={`/tiles/${imgSrc}`}/>
                                         <div>{mapStyle.label}</div>
                                     </Button>
                                 )
