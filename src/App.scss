@@ -204,7 +204,7 @@ div, span, a {
 
 .bp4-navbar-heading {
   height: 100%;
-  margin-right: 5px;
+  margin-right: 0;
 }
 
 .navbar-heading {
@@ -217,10 +217,10 @@ div, span, a {
     img {
       height: 30px;
       width: 30px;
-      margin-right: 5px;
     }
 
     span {
+      margin-left: 5px;
       font-size: 20px;
       color: #00bbff;
       @media (max-width: $responsive-threshold-small) {
@@ -238,6 +238,7 @@ div, span, a {
   padding-left: 10px;
   a {
     margin: 3px;
+    display: flex;
   }
 }
 
