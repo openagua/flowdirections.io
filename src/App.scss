@@ -2,6 +2,7 @@
 
 $responsive-threshold: 768px;
 $responsive-threshold-small: 450px;
+$responsive-threshold-x-small: 320px;
 $navbar-height: 50px;
 $sidebar-width: 350px;
 $sidebar-width-small: 100%;
@@ -52,7 +53,7 @@ button {
   padding: 5px;
 }
 
-div, span {
+div, span, a {
   outline: none !important;
 }
 
@@ -68,6 +69,10 @@ div, span {
   width: 265px;
   flex-wrap: wrap;
 
+  @media (max-width: $responsive-threshold-x-small) {
+    width: 180px;
+  }
+
   button {
     height: 95px;
     min-width: 75px;
@@ -80,6 +85,7 @@ div, span {
     border-color: rgba(0, 0, 0, 0) !important;
     display: flex;
     outline: none !important;
+    font-size: 12px;
 
     .bp4-button-text {
       margin: auto;
@@ -198,6 +204,7 @@ div, span {
 
 .bp4-navbar-heading {
   height: 100%;
+  margin-right: 5px;
 }
 
 .navbar-heading {
@@ -224,5 +231,18 @@ div, span {
     &:hover {
       text-decoration: none;
     }
+  }
+}
+
+.other-navbar-links {
+  padding-left: 10px;
+  a {
+    margin: 3px;
+  }
+}
+
+.donate-link {
+  @media (max-width: $responsive-threshold-x-small) {
+    display: none;
   }
 }

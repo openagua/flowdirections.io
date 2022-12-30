@@ -25,18 +25,18 @@ const StylesControl = ({
     return (
         <MapControl position={position} component={
             <Popover2
-                // interactionKind="hover"
                 placement="right-end"
                 content={
                     <div className="map-styles-control">
                         {mapStyles.map(mapStyle => {
                                 const isSelected = selected === mapStyle.id;
+                                const imgSrc = mapStyle.image || `${mapStyle.id}.png`;
                                 return (
                                     <Button key={mapStyle.id} id={mapStyle.id}
                                             className={isSelected ? "selected" : null}
                                             minimal outlined
                                             onClick={handleClick}>
-                                        <img alt={mapStyle.label} src={`/images/tiles/${mapStyle.id}.png`}/>
+                                        <img alt={mapStyle.label} src={`/images/tiles/${imgSrc}`}/>
                                         <div>{mapStyle.label}</div>
                                     </Button>
                                 )

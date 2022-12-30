@@ -14,8 +14,8 @@ import {
     MenuItem,
     Navbar,
     NavbarGroup,
-    Radio,
-    RadioGroup,
+    // Radio,
+    // RadioGroup,
     Slider,
     Spinner,
     Switch,
@@ -31,6 +31,11 @@ import SearchControl from "./controls/SearchControl";
 import StylesControl from "./controls/StylesControl";
 import {CatchmentSource, ExternalLink, OutletMarker, Panel} from "./components";
 import MapControl from "./controls/MapControl";
+import {mapStyles} from "./constants";
+
+import GitHubIcon from '@mui/icons-material/GitHub';
+// import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+// import { faEnvelope } from '@fortawesome/free-solid-svg-icons'
 
 // import shpwrite from './libraries/shp-write';
 // STYLES
@@ -44,7 +49,7 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import 'handsontable/dist/handsontable.full.min.css';
 
 import './App.scss';
-import {BUTTON, DARK, INTENT_WARNING} from "@blueprintjs/core/lib/esnext/common/classes";
+import {BUTTON, DARK, INTENT_WARNING, MINIMAL, SMALL} from "@blueprintjs/core/lib/esnext/common/classes";
 
 const {
     NODE_ENV,
@@ -62,34 +67,6 @@ const api = axios.create({
 });
 
 const COORD_PLACES = 1e6;
-
-const mapStyles = [
-    {
-        id: 'mapbox-streets',
-        label: 'Streets',
-        url: 'mapbox://styles/mapbox/streets-v11',
-    }, {
-        id: 'mapbox-satellite',
-        label: 'Satellite',
-        url: 'mapbox://styles/mapbox/satellite-v9'
-        // }, {
-        //     id: 'mapbox-satellite-streets',
-        //     label: 'Satellite Streets',
-        //     url: 'mapbox://styles/mapbox/satellite-streets-v12'
-    }, {
-        id: 'mapbox-outdoors',
-        label: 'Outdoors',
-        url: 'mapbox://styles/mapbox/outdoors-v12'
-    }, {
-        id: 'mapbox-light',
-        label: 'Light',
-        url: 'mapbox://styles/mapbox/light-v11'
-    }, {
-        id: 'mapbox-dark',
-        label: 'Dark',
-        url: 'mapbox://styles/mapbox/dark-v11'
-    }
-]
 
 // const FILETYPES = ['GeoJSON', 'Shapefile'];
 const FILETYPES = ['GeoJSON'];
@@ -617,10 +594,12 @@ const App = () => {
                     {/*        onClick={() => setDark(!dark)}/>*/}
                 </NavbarGroup>
                 <NavbarGroup align="right">
-                    {DONATE_LINK && <a className={classNames(BUTTON, INTENT_WARNING)} href={DONATE_LINK}
+                    {DONATE_LINK && <a className={classNames(BUTTON, INTENT_WARNING, "donate-link")} href={DONATE_LINK}
                                        target="_blank" rel="noreferrer">Donate</a>}
-                    {/*<a href="https://www.github.com/openagua/flowdirections.io"*/}
-                    {/*   target="_blank" style={{display: "flex"}}><GitHubIcon/></a>*/}
+                    <div className="other-navbar-links">
+                        <a href="https://www.github.com/openagua/flowdirections.io" rel="noreferrer"
+                           target="_blank"><GitHubIcon/></a>
+                    </div>
                 </NavbarGroup>
             </Navbar>
             <div className="main">
