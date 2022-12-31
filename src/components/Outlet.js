@@ -3,7 +3,7 @@ import mapboxgl from "mapbox-gl";
 import {ContextMenu2} from "@blueprintjs/popover2";
 import {Button, Icon} from "@blueprintjs/core";
 
-const OutletMarker = ({index, outlet, draggable, onDragEnd, onDelete}) => {
+const Outlet = ({index, outlet, draggable, onDragEnd, onDelete}) => {
 
     const handleMoveOutlet = ({lngLat}) => {
         const {lng, lat} = lngLat;
@@ -45,4 +45,4 @@ const OutletMarker = ({index, outlet, draggable, onDragEnd, onDelete}) => {
     )
 }
 
-export default OutletMarker;
+export default Outlet;

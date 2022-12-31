@@ -29,7 +29,7 @@ import {HotTable} from '@handsontable/react';
 import FileSaver from 'file-saver';
 import SearchControl from "./controls/SearchControl";
 import StylesControl from "./controls/StylesControl";
-import {CatchmentSource, ExternalLink, OutletMarker, Panel} from "./components";
+import {Catchment, ExternalLink, Outlet, Panel} from "./components";
 import MapControl from "./controls/MapControl";
 import {mapStyles} from "./constants";
 
@@ -86,7 +86,7 @@ const createOutlet = (lon, lat, id) => {
     )
 }
 
-const resolutions = [15, 30];
+// const resolutions = [15, 30];
 
 
 class Toast {
@@ -550,9 +550,9 @@ const App = () => {
     //     });
     // }
 
-    const handleChangeResolution = (e) => {
-        setResolution(Number(e.target.value));
-    }
+    // const handleChangeResolution = (e) => {
+    //     setResolution(Number(e.target.value));
+    // }
 
     const handleChangeMapStyle = (styleId) => {
         setMapStyle(mapStyles.find(s => s.id === styleId));
@@ -649,15 +649,15 @@ const App = () => {
                                     paint={{"raster-opacity": streamlinesOpacity / 100}}
                                 />
                             </Source>}
-                        <CatchmentSource data={quickMode ? catchment : catchments}/>
+                        <Catchment data={quickMode ? catchment : catchments}/>
                         {quickMode ? outlet &&
-                            <OutletMarker id="outlet" outlet={outlet} draggable={!locked}
-                                          onContextMenu={handleShowContextMenu}
-                                          onDragEnd={handleMoveOutlet} onDelete={handleDeleteOutlet}/> :
+                            <Outlet id="outlet" outlet={outlet} draggable={!locked}
+                                    onContextMenu={handleShowContextMenu}
+                                    onDragEnd={handleMoveOutlet} onDelete={handleDeleteOutlet}/> :
                             outlets && outlets.features.map((o, i) =>
-                                <OutletMarker id="outlet" key={o.properties.id} outlet={o} draggable={!locked}
-                                              index={i} onContextMenu={handleShowContextMenu} onDelete={handleDeleteOutlet}
-                                              onDragEnd={handleMoveOutlet}/>)}
+                                <Outlet id="outlet" key={o.properties.id} outlet={o} draggable={!locked}
+                                        index={i} onContextMenu={handleShowContextMenu} onDelete={handleDeleteOutlet}
+                                        onDragEnd={handleMoveOutlet}/>)}
                     </Map>
                 </div>
                 <div className="map-sidebar">

@@ -1,13 +1,13 @@
 import {Layer, Source} from "react-map-gl";
 
-const CatchmentSource = ({data}) => {
+const Catchment = ({data}) => {
     const sourceId = "catchments-geojson";
 
     if (!data) {
         return null;
     }
 
-    const fillColor = '#4E3FC8';
+    const fillColor = '#169eff';
 
     return (
         <Source id={sourceId} type="geojson" data={data}>
@@ -31,4 +31,4 @@ const CatchmentSource = ({data}) => {
     )
 }
 
-export default CatchmentSource;
+export default Catchment;

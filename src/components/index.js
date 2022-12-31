@@ -1,6 +1,6 @@
-import CatchmentSource from "./CatchmentSource";
+import Catchment from "./Catchment";
 import ExternalLink from "./ExternalLink";
-import OutletMarker from "./OutletMarker";
+import Outlet from "./Outlet";
 import Panel from "./Panel";
 
-export {CatchmentSource, ExternalLink, OutletMarker, Panel}
+export {Catchment, ExternalLink, Outlet, Panel}
