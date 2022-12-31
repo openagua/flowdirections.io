@@ -769,36 +769,36 @@ const App = () => {
                                 </p>
                                 <h4>Getting help</h4>
                                 <p>Please see the <ExternalLink href="https://docs.flowdirections.io">flowdirections.io
-                            documentation</ExternalLink>.</p>
-                    <h4>Feedback</h4>
-                    <p>
-                        Would you like to submit a bug or have a suggestion for improvement? Please
-                        open an issue in the site's <ExternalLink
-                        href="https://github.com/openagua/flowdirections.io/issues">issue
-                        tracker</ExternalLink>!
-                    </p>
-                    <h4>Privacy</h4>
-                    <p>None of your data is stored with flowdirections.io. The backend server only
-                        performs
-                        calculations (<ExternalLink
-                            href="https://www.github.com/openagua/flowdirections-api">source
-                            code</ExternalLink>), while the app that you are
-                        currently using does not use cookies, and only stores data on your computer,
-                        during your session
-                        (<ExternalLink
-                            href="https://www.github.com/openagua/flowdirections.io">source
-                            code</ExternalLink>). This
-                        may change in the future, in which case you will know about it.</p>
-                </Panel>
-                }/>
-            <Tabs.Expander/>
-            <Button small minimal onClick={() => setSidebarIsClosed(true)} icon="cross"/>
-        </Tabs>
-</div>
-</div>
-</div>
-)
-    ;
+                                    documentation</ExternalLink>.</p>
+                                <h4>Feedback</h4>
+                                <p>
+                                    Would you like to submit a bug or have a suggestion for improvement? Please
+                                    open an issue in the site's <ExternalLink
+                                    href="https://github.com/openagua/flowdirections.io/issues">issue
+                                    tracker</ExternalLink>!
+                                </p>
+                                <h4>Privacy</h4>
+                                <p>None of your data is stored with flowdirections.io. The backend server only
+                                    performs
+                                    calculations (<ExternalLink
+                                        href="https://www.github.com/openagua/flowdirections-api">source
+                                        code</ExternalLink>), while the app that you are
+                                    currently using does not use cookies, and only stores data on your computer,
+                                    during your session
+                                    (<ExternalLink
+                                        href="https://www.github.com/openagua/flowdirections.io">source
+                                        code</ExternalLink>). This
+                                    may change in the future, in which case you will know about it.</p>
+                            </Panel>
+                        }/>
+                        <Tabs.Expander/>
+                        <Button small minimal onClick={() => setSidebarIsClosed(true)} icon="cross"/>
+                    </Tabs>
+                </div>
+            </div>
+        </div>
+    )
+        ;
 }
 
 export default App;
