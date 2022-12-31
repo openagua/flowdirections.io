@@ -14,8 +14,8 @@ import {
     MenuItem,
     Navbar,
     NavbarGroup,
-    // Radio,
-    // RadioGroup,
+    Radio,
+    RadioGroup,
     Slider,
     Spinner,
     Switch,
@@ -190,6 +190,7 @@ const App = () => {
 
     const [sidebarIsClosed, setSidebarIsClosed] = useState(smallScreen);
     const [projection, setProjection] = useState("mercator");
+    const [routing] = useState('d8');  // set routing not yet available on API
     const [dark,] = useState(false);
     const [mapStyle, setMapStyle] = useState(mapStyles[0]);
     const [outlet, setOutlet] = useState(null);
@@ -401,7 +402,7 @@ const App = () => {
         }
         setWorking(true);
         setCatchment(null);
-        api.get('catchment', {params: {lon, lat, res: resolution, remove_sinks: _removeSinks}})
+        api.get('catchment', {params: {lon, lat, res: resolution, routing, remove_sinks: _removeSinks}})
             .then(({data}) => {
                 setCatchment(data);
                 originalCatchment.current = data;
@@ -766,44 +767,38 @@ const App = () => {
                                     catchment delineation process and other DEM-based hydrologic analyses. It also
                                     evokes the general movement of water.
                                 </p>
-                                <h4>Other similar/related tools</h4>
-                                <ul>
-                                    <li><ExternalLink href="https://river-runner-global.samlearner.com/">River
-                                        Runner</ExternalLink>: "Tap to drop a raindrop anywhere in the world and
-                                        watch where it ends up"
-                                    </li>
-                                    <li><ExternalLink href="https://streamstats.usgs.gov/ss/">USGS
-                                        StreamStats</ExternalLink>: U.S.-only stream info, including delineation
-                                    </li>
-                                </ul>
-                                <h4>Feedback</h4>
-                                <p>
-                                    Would you like to submit a bug or have a suggestion for improvement? Please
-                                    open an issue in the site's <ExternalLink
-                                    href="https://github.com/openagua/flowdirections.io/issues">issue
-                                    tracker</ExternalLink>!
-                                </p>
-                                <h4>Privacy</h4>
-                                <p>None of your data is stored with flowdirections.io. The backend server only
-                                    performs
-                                    calculations (<ExternalLink
-                                        href="https://www.github.com/openagua/flowdirections-api">source
-                                        code</ExternalLink>), while the app that you are
-                                    currently using does not use cookies, and only stores data on your computer,
-                                    during your session
-                                    (<ExternalLink
-                                        href="https://www.github.com/openagua/flowdirections.io">source
-                                        code</ExternalLink>). This
-                                    may change in the future, in which case you will know about it.</p>
-                            </Panel>
-                        }/>
-                        <Tabs.Expander/>
-                        <Button small minimal onClick={() => setSidebarIsClosed(true)} icon="cross"/>
-                    </Tabs>
-                </div>
-            </div>
-        </div>
-    );
+                                <h4>Getting help</h4>
+                                <p>Please see the <ExternalLink href="https://docs.flowdirections.io">flowdirections.io
+                            documentation</ExternalLink>.</p>
+                    <h4>Feedback</h4>
+                    <p>
+                        Would you like to submit a bug or have a suggestion for improvement? Please
+                        open an issue in the site's <ExternalLink
+                        href="https://github.com/openagua/flowdirections.io/issues">issue
+                        tracker</ExternalLink>!
+                    </p>
+                    <h4>Privacy</h4>
+                    <p>None of your data is stored with flowdirections.io. The backend server only
+                        performs
+                        calculations (<ExternalLink
+                            href="https://www.github.com/openagua/flowdirections-api">source
+                            code</ExternalLink>), while the app that you are
+                        currently using does not use cookies, and only stores data on your computer,
+                        during your session
+                        (<ExternalLink
+                            href="https://www.github.com/openagua/flowdirections.io">source
+                            code</ExternalLink>). This
+                        may change in the future, in which case you will know about it.</p>
+                </Panel>
+                }/>
+            <Tabs.Expander/>
+            <Button small minimal onClick={() => setSidebarIsClosed(true)} icon="cross"/>
+        </Tabs>
+</div>
+</div>
+</div>
+)
+    ;
 }
 
 export default App;
